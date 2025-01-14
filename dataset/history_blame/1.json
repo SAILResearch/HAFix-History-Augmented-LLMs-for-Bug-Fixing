@@ -1,0 +1,403 @@
+{
+  "id": "1",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "621a4865cc05326fb3f892df2e7c455912860481",
+      "commit_message": "Convert to single Python 2/3 codebase",
+      "commit_author": "Ram Rachum",
+      "commit_date": "2019-04-21 21:36:31",
+      "commit_parent": "443b442b1daf1ad42771555881e669f923604ef4"
+    },
+    "function": {
+      "function_name": "get_write_function",
+      "function_code_before": "def get_write_function(output):\n    if output is None:\n\n        def write(s):\n            stderr = sys.stderr\n            stderr.write(s)\n            stderr.write('\\n')\n    elif isinstance(output, (pycompat.PathLike, str)):\n        output_path = pathlib.Path(output)\n\n        def write(s):\n            with output_path.open('a') as output_file:\n                output_file.write(s)\n                output_file.write('\\n')\n    else:\n        assert isinstance(output, utils.WritableStream)\n\n        def write(s):\n            output.write(s)\n            output.write('\\n')\n    return write",
+      "function_code_after": "def get_write_function(output):\n    if output is None:\n\n        def write(s):\n            s += '\\n'\n            if isinstance(s, bytes):\n                s = s.decode('utf-8')\n            stderr = sys.stderr\n            stderr.write(s)\n    elif isinstance(output, (pycompat.PathLike, str)):\n\n        def write(s):\n            s += '\\n'\n            if isinstance(s, bytes):\n                s = s.decode('utf-8')\n            with open(output_path, 'a') as output_file:\n                output_file.write(s)\n    else:\n        assert isinstance(output, utils.WritableStream)\n\n        def write(s):\n            s += '\\n'\n            if isinstance(s, bytes):\n                s = s.decode('utf-8')\n            output.write(s)\n    return write",
+      "function_before_start_line": 20,
+      "function_before_end_line": 38,
+      "function_after_start_line": 21,
+      "function_after_end_line": 44,
+      "function_before_token_count": 51,
+      "function_after_token_count": 43,
+      "functions_name_modified_file": [
+        "get_write_function",
+        "snoop"
+      ],
+      "functions_name_all_files": [
+        "test_string_io",
+        "check",
+        "get_write_function",
+        "_check_value",
+        "assert_output",
+        "_check_name",
+        "__enter__",
+        "get_local_reprs",
+        "event_name",
+        "_check_source",
+        "test_depth",
+        "get_shortish_repr",
+        "__init__",
+        "trace",
+        "_check_stage",
+        "snoop",
+        "get_source_from_frame",
+        "__exit__",
+        "test_variables"
+      ],
+      "functions_name_co_evolved_modified_file": [
+        "snoop"
+      ],
+      "functions_name_co_evolved_all_files": [
+        "__init__",
+        "trace",
+        "get_shortish_repr",
+        "_check_stage",
+        "_check_name",
+        "snoop",
+        "_check_source",
+        "check",
+        "get_local_reprs",
+        "get_source_from_frame",
+        "_check_value",
+        "test_variables"
+      ]
+    },
+    "file": {
+      "file_name": "pysnooper.py",
+      "file_nloc": 46,
+      "file_complexity": 11,
+      "file_token_count": 261,
+      "file_before": "# Copyright 2019 Ram Rachum.\n# This program is distributed under the MIT license.\n\nimport sys\nimport os\nimport pathlib\nimport inspect\nimport types\nimport datetime as datetime_module\nimport re\nimport collections\n\nimport decorator\n\nfrom . import utils\nfrom . import pycompat\nfrom .tracer import Tracer\n\n        \ndef get_write_function(output):\n    if output is None:\n        def write(s):\n            stderr = sys.stderr\n            stderr.write(s)\n            stderr.write('\\n')\n    elif isinstance(output, (pycompat.PathLike, str)):\n        output_path = pathlib.Path(output)\n        def write(s):\n            with output_path.open('a') as output_file:\n                output_file.write(s)\n                output_file.write('\\n')\n    else:\n        assert isinstance(output, utils.WritableStream)\n        def write(s):\n            output.write(s)\n            output.write('\\n')\n            \n    return write\n    \n    \n\ndef snoop(output=None, *, variables=(), depth=1):\n    write = get_write_function(output)\n    @decorator.decorator\n    def decorate(function, *args, **kwargs):\n        target_code_object = function.__code__\n        with Tracer(target_code_object=target_code_object,\n                    write=write, variables=variables,\n                    depth=depth):\n            return function(*args, **kwargs)\n    \n    return decorate\n    \n    \n    ",
+      "file_after": "# Copyright 2019 Ram Rachum.\n# This program is distributed under the MIT license.\n\nfrom future import standard_library\nstandard_library.install_aliases()\nimport sys\nimport os\nimport inspect\nimport types\nimport datetime as datetime_module\nimport re\nimport collections\n\nimport decorator\n\nfrom . import utils\nfrom . import pycompat\nfrom .tracer import Tracer\n\n        \ndef get_write_function(output):\n    if output is None:\n        def write(s):\n            s += '\\n'\n            if isinstance(s, bytes): # Python 2 compatibility\n                s = s.decode('utf-8')\n            stderr = sys.stderr\n            stderr.write(s)\n    elif isinstance(output, (pycompat.PathLike, str)):\n        def write(s):\n            s += '\\n'\n            if isinstance(s, bytes): # Python 2 compatibility\n                s = s.decode('utf-8')\n            with open(output_path, 'a') as output_file:\n                output_file.write(s)\n    else:\n        assert isinstance(output, utils.WritableStream)\n        def write(s):\n            s += '\\n'\n            if isinstance(s, bytes): # Python 2 compatibility\n                s = s.decode('utf-8')\n            output.write(s)\n            \n    return write\n    \n    \n\ndef snoop(output=None, variables=(), depth=1):\n    write = get_write_function(output)\n    @decorator.decorator\n    def decorate(function, *args, **kwargs):\n        target_code_object = function.__code__\n        with Tracer(target_code_object=target_code_object,\n                    write=write, variables=variables,\n                    depth=depth):\n            return function(*args, **kwargs)\n    \n    return decorate\n    \n    \n    ",
+      "file_patch": "@@ -1,9 +1,10 @@\n # Copyright 2019 Ram Rachum.\n # This program is distributed under the MIT license.\n \n+from future import standard_library\n+standard_library.install_aliases()\n import sys\n import os\n-import pathlib\n import inspect\n import types\n import datetime as datetime_module\n@@ -20,26 +21,31 @@ from .tracer import Tracer\n def get_write_function(output):\n     if output is None:\n         def write(s):\n+            s += '\\n'\n+            if isinstance(s, bytes): # Python 2 compatibility\n+                s = s.decode('utf-8')\n             stderr = sys.stderr\n             stderr.write(s)\n-            stderr.write('\\n')\n     elif isinstance(output, (pycompat.PathLike, str)):\n-        output_path = pathlib.Path(output)\n         def write(s):\n-            with output_path.open('a') as output_file:\n+            s += '\\n'\n+            if isinstance(s, bytes): # Python 2 compatibility\n+                s = s.decode('utf-8')\n+            with open(output_path, 'a') as output_file:\n                 output_file.write(s)\n-                output_file.write('\\n')\n     else:\n         assert isinstance(output, utils.WritableStream)\n         def write(s):\n+            s += '\\n'\n+            if isinstance(s, bytes): # Python 2 compatibility\n+                s = s.decode('utf-8')\n             output.write(s)\n-            output.write('\\n')\n             \n     return write\n     \n     \n \n-def snoop(output=None, *, variables=(), depth=1):\n+def snoop(output=None, variables=(), depth=1):\n     write = get_write_function(output)\n     @decorator.decorator\n     def decorate(function, *args, **kwargs):\n",
+      "files_name_in_blame_commit": [
+        "utils.py",
+        "setup.py",
+        "pysnooper.py",
+        "test_pysnooper.py",
+        "tracer.py"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 8
+  },
+  "recursive_blame_commits": {
+    "recursive_blame_function_lines": {
+      "20": {
+        "commit_id": "443b442b1daf1ad42771555881e669f923604ef4",
+        "line_code": "def get_write_function(output):",
+        "commit_date": "2019-04-21 21:36:31",
+        "valid": 1
+      },
+      "21": {
+        "commit_id": "cb2d96ddfaae3056804e0052bf53807ffc822d3",
+        "line_code": "    if output is None:",
+        "commit_date": "2019-04-20 13:45:11",
+        "valid": 1
+      },
+      "22": {
+        "commit_id": "cb2d96ddfaae3056804e0052bf53807ffc822d3",
+        "line_code": "        def write(s):",
+        "commit_date": "2019-04-20 13:45:11",
+        "valid": 1
+      },
+      "23": {
+        "commit_id": "cb2d96ddfaae3056804e0052bf53807ffc822d3",
+        "line_code": "            stderr = sys.stderr",
+        "commit_date": "2019-04-20 13:45:11",
+        "valid": 1
+      },
+      "24": {
+        "commit_id": "cb2d96ddfaae3056804e0052bf53807ffc822d3",
+        "line_code": "            stderr.write(s)",
+        "commit_date": "2019-04-20 13:45:11",
+        "valid": 1
+      },
+      "25": {
+        "commit_id": "cb2d96ddfaae3056804e0052bf53807ffc822d3",
+        "line_code": "            stderr.write('\\n')",
+        "commit_date": "2019-04-20 13:45:11",
+        "valid": 1
+      },
+      "26": {
+        "commit_id": "443b442b1daf1ad42771555881e669f923604ef4",
+        "line_code": "    elif isinstance(output, (pycompat.PathLike, str)):",
+        "commit_date": "2019-04-21 21:36:31",
+        "valid": 1
+      },
+      "27": {
+        "commit_id": "cb2d96ddfaae3056804e0052bf53807ffc822d3",
+        "line_code": "        output_path = pathlib.Path(output)",
+        "commit_date": "2019-04-20 13:45:11",
+        "valid": 1
+      },
+      "28": {
+        "commit_id": "cb2d96ddfaae3056804e0052bf53807ffc822d3",
+        "line_code": "        def write(s):",
+        "commit_date": "2019-04-20 13:45:11",
+        "valid": 1
+      },
+      "29": {
+        "commit_id": "cb2d96ddfaae3056804e0052bf53807ffc822d3",
+        "line_code": "            with output_path.open('a') as output_file:",
+        "commit_date": "2019-04-20 13:45:11",
+        "valid": 1
+      },
+      "30": {
+        "commit_id": "cb2d96ddfaae3056804e0052bf53807ffc822d3",
+        "line_code": "                output_file.write(s)",
+        "commit_date": "2019-04-20 13:45:11",
+        "valid": 1
+      },
+      "31": {
+        "commit_id": "cb2d96ddfaae3056804e0052bf53807ffc822d3",
+        "line_code": "                output_file.write('\\n')",
+        "commit_date": "2019-04-20 13:45:11",
+        "valid": 1
+      },
+      "32": {
+        "commit_id": "cb2d96ddfaae3056804e0052bf53807ffc822d3",
+        "line_code": "    else:",
+        "commit_date": "2019-04-20 13:45:11",
+        "valid": 1
+      },
+      "33": {
+        "commit_id": "cb2d96ddfaae3056804e0052bf53807ffc822d3",
+        "line_code": "        assert isinstance(output, utils.WritableStream)",
+        "commit_date": "2019-04-20 13:45:11",
+        "valid": 1
+      },
+      "34": {
+        "commit_id": "cb2d96ddfaae3056804e0052bf53807ffc822d3",
+        "line_code": "        def write(s):",
+        "commit_date": "2019-04-20 13:45:11",
+        "valid": 1
+      },
+      "35": {
+        "commit_id": "cb2d96ddfaae3056804e0052bf53807ffc822d3",
+        "line_code": "            output.write(s)",
+        "commit_date": "2019-04-20 13:45:11",
+        "valid": 1
+      },
+      "36": {
+        "commit_id": "cb2d96ddfaae3056804e0052bf53807ffc822d3",
+        "line_code": "            output.write('\\n')",
+        "commit_date": "2019-04-20 13:45:11",
+        "valid": 1
+      },
+      "37": {
+        "commit_id": "cb2d96ddfaae3056804e0052bf53807ffc822d3",
+        "line_code": "            ",
+        "commit_date": "2019-04-20 13:45:11",
+        "valid": 0
+      },
+      "38": {
+        "commit_id": "cb2d96ddfaae3056804e0052bf53807ffc822d3",
+        "line_code": "    return write",
+        "commit_date": "2019-04-20 13:45:11",
+        "valid": 1
+      }
+    },
+    "commits": {
+      "443b442b1daf1ad42771555881e669f923604ef4": {
+        "commit": {
+          "commit_id": "443b442b1daf1ad42771555881e669f923604ef4",
+          "commit_message": "Work feverishly",
+          "commit_author": "Ram Rachum",
+          "commit_date": "2019-04-21 21:36:31",
+          "commit_parent": "cb2d96ddfaae3056804e0052bf53807ffc822d3e"
+        },
+        "function": {
+          "function_name": "get_write_function",
+          "function_code_before": "def get_write_function(output) -> typing.Callable:\n    if output is None:\n\n        def write(s):\n            stderr = sys.stderr\n            stderr.write(s)\n            stderr.write('\\n')\n    elif isinstance(output, (os.PathLike, str)):\n        output_path = pathlib.Path(output)\n\n        def write(s):\n            with output_path.open('a') as output_file:\n                output_file.write(s)\n                output_file.write('\\n')\n    else:\n        assert isinstance(output, utils.WritableStream)\n\n        def write(s):\n            output.write(s)\n            output.write('\\n')\n    return write",
+          "function_code_after": "def get_write_function(output):\n    if output is None:\n\n        def write(s):\n            stderr = sys.stderr\n            stderr.write(s)\n            stderr.write('\\n')\n    elif isinstance(output, (pycompat.PathLike, str)):\n        output_path = pathlib.Path(output)\n\n        def write(s):\n            with output_path.open('a') as output_file:\n                output_file.write(s)\n                output_file.write('\\n')\n    else:\n        assert isinstance(output, utils.WritableStream)\n\n        def write(s):\n            output.write(s)\n            output.write('\\n')\n    return write",
+          "function_before_start_line": 21,
+          "function_before_end_line": 39,
+          "function_after_start_line": 20,
+          "function_after_end_line": 38,
+          "function_before_token_count": 55,
+          "function_after_token_count": 51,
+          "functions_name_modified_file": [
+            "get_write_function",
+            "snoop"
+          ],
+          "functions_name_all_files": [
+            "__fspath__",
+            "_check_methods",
+            "test_string_io",
+            "check",
+            "get_write_function",
+            "_check_value",
+            "write",
+            "assert_output",
+            "_check_name",
+            "__enter__",
+            "get_local_reprs",
+            "event_name",
+            "_check_source",
+            "test_depth",
+            "get_shortish_repr",
+            "__subclasshook__",
+            "__init__",
+            "trace",
+            "_check_stage",
+            "snoop",
+            "get_source_from_frame",
+            "__exit__",
+            "test_variables"
+          ],
+          "functions_name_co_evolved_modified_file": [
+            "__init__",
+            "trace",
+            "get_shortish_repr",
+            "snoop",
+            "__enter__",
+            "get_local_reprs",
+            "get_source_from_frame",
+            "__exit__"
+          ],
+          "functions_name_co_evolved_all_files": [
+            "__fspath__",
+            "test_string_io",
+            "check",
+            "_check_value",
+            "assert_output",
+            "check_output",
+            "_check_name",
+            "__enter__",
+            "get_local_reprs",
+            "test_pysnooper",
+            "event_name",
+            "_check_source",
+            "test_depth",
+            "get_shortish_repr",
+            "__subclasshook__",
+            "__init__",
+            "trace",
+            "_check_stage",
+            "snoop",
+            "get_source_from_frame",
+            "__exit__",
+            "test_variables"
+          ]
+        },
+        "file": {
+          "file_name": "pysnooper.py",
+          "file_nloc": 40,
+          "file_complexity": 8,
+          "file_token_count": 225,
+          "file_before": "# Copyright 2019 Ram Rachum.\n# This program is distributed under the MIT license.\n\nfrom __future__ import annotations\n\nimport sys\nimport os\nimport pathlib\nimport inspect\nimport types\nimport typing\nimport datetime as datetime_module\nimport re\nimport collections\n\nimport decorator\n\nfrom . import utils\n\n        \ndef get_write_function(output) -> typing.Callable:\n    if output is None:\n        def write(s):\n            stderr = sys.stderr\n            stderr.write(s)\n            stderr.write('\\n')\n    elif isinstance(output, (os.PathLike, str)):\n        output_path = pathlib.Path(output)\n        def write(s):\n            with output_path.open('a') as output_file:\n                output_file.write(s)\n                output_file.write('\\n')\n    else:\n        assert isinstance(output, utils.WritableStream)\n        def write(s):\n            output.write(s)\n            output.write('\\n')\n            \n    return write\n    \n    \nclass Tracer:\n    def __init__(self, target_code_object: types.CodeType, write: callable, *,\n                 variables: typing.Sequence=()):\n        self.target_code_object = target_code_object\n        self.write = write\n        self.variables = variables\n        self.old_local_reprs = {}\n        self.local_reprs = {}\n        \n        \n    def __enter__(self):\n        self.original_trace_function = sys.gettrace()\n        sys.settrace(self.trace)\n        \n    def __exit__(self, exc_type, exc_value, exc_traceback):\n        sys.settrace(self.original_trace_function)\n        \n    def trace(self: Tracer, frame: types.FrameType, event: str,\n              arg: typing.Any) -> typing.Callable:\n        if frame.f_code != self.target_code_object:\n            return self.trace\n        self.old_local_reprs, self.local_reprs = \\\n             self.local_reprs, get_local_reprs(frame, variables=self.variables)\n        modified_local_reprs = {\n            key: value for key, value in self.local_reprs.items()\n            if (key not in self.old_local_reprs) or\n                                           (self.old_local_reprs[key] != value)\n        }\n        for name, value_repr in modified_local_reprs.items():\n            self.write(f'            ==> {name} = {value_repr}')\n        # x = repr((frame.f_code.co_stacksize, frame, event, arg))\n        now_string = datetime_module.datetime.now().time().isoformat()\n        source_line = get_source_from_frame(frame)[frame.f_lineno - 1]\n        self.write(f'{now_string} {event:9} '\n                   f'{frame.f_lineno:4} {source_line}')\n        return self.trace\n        \n        \n        \nsource_cache_by_module_name = {}\nsource_cache_by_file_name = {}\ndef get_source_from_frame(frame: types.FrameType) -> str:\n    module_name = frame.f_globals.get('__name__') or ''\n    if module_name:\n        try:\n            return source_cache_by_module_name[module_name]\n        except KeyError:\n            pass\n    file_name = frame.f_code.co_filename\n    if file_name:\n        try:\n            return source_cache_by_file_name[file_name]\n        except KeyError:\n            pass\n    function = frame.f_code.co_name\n    loader = frame.f_globals.get('__loader__')\n    \n    source: typing.Union[None, str] = None\n    if hasattr(loader, 'get_source'):\n        try:\n            source = loader.get_source(module_name)\n        except ImportError:\n            pass\n        if source is not None:\n            source = source.splitlines()\n    if source is None:\n        try:\n            with open(file_name, 'rb') as fp:\n                source = fp.read().splitlines()\n        except (OSError, IOError):\n            pass\n    if source is None:\n        raise NotImplementedError\n\n    # If we just read the source from a file, or if the loader did not\n    # apply tokenize.detect_encoding to decode the source into a\n    # string, then we should do that ourselves.\n    if isinstance(source[0], bytes):\n        encoding = 'ascii'\n        for line in source[:2]:\n            # File coding may be specified. Match pattern from PEP-263\n            # (https://www.python.org/dev/peps/pep-0263/)\n            match = re.search(br'coding[:=]\\s*([-\\w.]+)', line)\n            if match:\n                encoding = match.group(1).decode('ascii')\n                break\n        source = [str(sline, encoding, 'replace') for sline in source]\n\n    if module_name:\n        source_cache_by_module_name[module_name] = source\n    if file_name:\n        source_cache_by_file_name[file_name] = source\n    return source\n\ndef get_local_reprs(frame: types.FrameType, *, variables: typing.Sequence=()) -> dict:\n    result = {}\n    for key, value in frame.f_locals.items():\n        try:\n            result[key] = get_shortish_repr(value)\n        except Exception:\n            continue\n    locals_and_globals = collections.ChainMap(frame.f_locals, frame.f_globals)\n    for variable in variables:\n        steps = variable.split('.')\n        step_iterator = iter(steps)\n        try:\n            current = locals_and_globals[next(step_iterator)]\n            for step in step_iterator:\n                current = getattr(current, step)\n        except (KeyError, AttributeError):\n            continue\n        try:\n            result[variable] = get_shortish_repr(current)\n        except Exception:\n            continue\n    return result\n\ndef get_shortish_repr(item) -> str:\n    r = repr(item)\n    if len(r) > 100:\n        r = f'{r[:97]}...'\n    return r\n\n\ndef snoop(output=None, *, variables=()) -> typing.Callable:\n    write = get_write_function(output)\n    @decorator.decorator\n    def decorate(function, *args, **kwargs) -> typing.Callable:\n        target_code_object = function.__code__\n        with Tracer(target_code_object, write, variables=variables):\n            return function(*args, **kwargs)\n    \n    return decorate\n    \n    \n    ",
+          "file_after": "# Copyright 2019 Ram Rachum.\n# This program is distributed under the MIT license.\n\nimport sys\nimport os\nimport pathlib\nimport inspect\nimport types\nimport datetime as datetime_module\nimport re\nimport collections\n\nimport decorator\n\nfrom . import utils\nfrom . import pycompat\nfrom .tracer import Tracer\n\n        \ndef get_write_function(output):\n    if output is None:\n        def write(s):\n            stderr = sys.stderr\n            stderr.write(s)\n            stderr.write('\\n')\n    elif isinstance(output, (pycompat.PathLike, str)):\n        output_path = pathlib.Path(output)\n        def write(s):\n            with output_path.open('a') as output_file:\n                output_file.write(s)\n                output_file.write('\\n')\n    else:\n        assert isinstance(output, utils.WritableStream)\n        def write(s):\n            output.write(s)\n            output.write('\\n')\n            \n    return write\n    \n    \n\ndef snoop(output=None, *, variables=(), depth=1):\n    write = get_write_function(output)\n    @decorator.decorator\n    def decorate(function, *args, **kwargs):\n        target_code_object = function.__code__\n        with Tracer(target_code_object=target_code_object,\n                    write=write, variables=variables,\n                    depth=depth):\n            return function(*args, **kwargs)\n    \n    return decorate\n    \n    \n    ",
+          "file_patch": "@@ -1,14 +1,11 @@\n # Copyright 2019 Ram Rachum.\n # This program is distributed under the MIT license.\n \n-from __future__ import annotations\n-\n import sys\n import os\n import pathlib\n import inspect\n import types\n-import typing\n import datetime as datetime_module\n import re\n import collections\n@@ -16,15 +13,17 @@ import collections\n import decorator\n \n from . import utils\n+from . import pycompat\n+from .tracer import Tracer\n \n         \n-def get_write_function(output) -> typing.Callable:\n+def get_write_function(output):\n     if output is None:\n         def write(s):\n             stderr = sys.stderr\n             stderr.write(s)\n             stderr.write('\\n')\n-    elif isinstance(output, (os.PathLike, str)):\n+    elif isinstance(output, (pycompat.PathLike, str)):\n         output_path = pathlib.Path(output)\n         def write(s):\n             with output_path.open('a') as output_file:\n@@ -39,136 +38,15 @@ def get_write_function(output) -> typing.Callable:\n     return write\n     \n     \n-class Tracer:\n-    def __init__(self, target_code_object: types.CodeType, write: callable, *,\n-                 variables: typing.Sequence=()):\n-        self.target_code_object = target_code_object\n-        self.write = write\n-        self.variables = variables\n-        self.old_local_reprs = {}\n-        self.local_reprs = {}\n-        \n-        \n-    def __enter__(self):\n-        self.original_trace_function = sys.gettrace()\n-        sys.settrace(self.trace)\n-        \n-    def __exit__(self, exc_type, exc_value, exc_traceback):\n-        sys.settrace(self.original_trace_function)\n-        \n-    def trace(self: Tracer, frame: types.FrameType, event: str,\n-              arg: typing.Any) -> typing.Callable:\n-        if frame.f_code != self.target_code_object:\n-            return self.trace\n-        self.old_local_reprs, self.local_reprs = \\\n-             self.local_reprs, get_local_reprs(frame, variables=self.variables)\n-        modified_local_reprs = {\n-            key: value for key, value in self.local_reprs.items()\n-            if (key not in self.old_local_reprs) or\n-                                           (self.old_local_reprs[key] != value)\n-        }\n-        for name, value_repr in modified_local_reprs.items():\n-            self.write(f'            ==> {name} = {value_repr}')\n-        # x = repr((frame.f_code.co_stacksize, frame, event, arg))\n-        now_string = datetime_module.datetime.now().time().isoformat()\n-        source_line = get_source_from_frame(frame)[frame.f_lineno - 1]\n-        self.write(f'{now_string} {event:9} '\n-                   f'{frame.f_lineno:4} {source_line}')\n-        return self.trace\n-        \n-        \n-        \n-source_cache_by_module_name = {}\n-source_cache_by_file_name = {}\n-def get_source_from_frame(frame: types.FrameType) -> str:\n-    module_name = frame.f_globals.get('__name__') or ''\n-    if module_name:\n-        try:\n-            return source_cache_by_module_name[module_name]\n-        except KeyError:\n-            pass\n-    file_name = frame.f_code.co_filename\n-    if file_name:\n-        try:\n-            return source_cache_by_file_name[file_name]\n-        except KeyError:\n-            pass\n-    function = frame.f_code.co_name\n-    loader = frame.f_globals.get('__loader__')\n-    \n-    source: typing.Union[None, str] = None\n-    if hasattr(loader, 'get_source'):\n-        try:\n-            source = loader.get_source(module_name)\n-        except ImportError:\n-            pass\n-        if source is not None:\n-            source = source.splitlines()\n-    if source is None:\n-        try:\n-            with open(file_name, 'rb') as fp:\n-                source = fp.read().splitlines()\n-        except (OSError, IOError):\n-            pass\n-    if source is None:\n-        raise NotImplementedError\n-\n-    # If we just read the source from a file, or if the loader did not\n-    # apply tokenize.detect_encoding to decode the source into a\n-    # string, then we should do that ourselves.\n-    if isinstance(source[0], bytes):\n-        encoding = 'ascii'\n-        for line in source[:2]:\n-            # File coding may be specified. Match pattern from PEP-263\n-            # (https://www.python.org/dev/peps/pep-0263/)\n-            match = re.search(br'coding[:=]\\s*([-\\w.]+)', line)\n-            if match:\n-                encoding = match.group(1).decode('ascii')\n-                break\n-        source = [str(sline, encoding, 'replace') for sline in source]\n-\n-    if module_name:\n-        source_cache_by_module_name[module_name] = source\n-    if file_name:\n-        source_cache_by_file_name[file_name] = source\n-    return source\n-\n-def get_local_reprs(frame: types.FrameType, *, variables: typing.Sequence=()) -> dict:\n-    result = {}\n-    for key, value in frame.f_locals.items():\n-        try:\n-            result[key] = get_shortish_repr(value)\n-        except Exception:\n-            continue\n-    locals_and_globals = collections.ChainMap(frame.f_locals, frame.f_globals)\n-    for variable in variables:\n-        steps = variable.split('.')\n-        step_iterator = iter(steps)\n-        try:\n-            current = locals_and_globals[next(step_iterator)]\n-            for step in step_iterator:\n-                current = getattr(current, step)\n-        except (KeyError, AttributeError):\n-            continue\n-        try:\n-            result[variable] = get_shortish_repr(current)\n-        except Exception:\n-            continue\n-    return result\n-\n-def get_shortish_repr(item) -> str:\n-    r = repr(item)\n-    if len(r) > 100:\n-        r = f'{r[:97]}...'\n-    return r\n-\n \n-def snoop(output=None, *, variables=()) -> typing.Callable:\n+def snoop(output=None, *, variables=(), depth=1):\n     write = get_write_function(output)\n     @decorator.decorator\n-    def decorate(function, *args, **kwargs) -> typing.Callable:\n+    def decorate(function, *args, **kwargs):\n         target_code_object = function.__code__\n-        with Tracer(target_code_object, write, variables=variables):\n+        with Tracer(target_code_object=target_code_object,\n+                    write=write, variables=variables,\n+                    depth=depth):\n             return function(*args, **kwargs)\n     \n     return decorate\n",
+          "files_name_in_blame_commit": [
+            "pycompat.py",
+            "utils.py",
+            "pysnooper.py",
+            "test_pysnooper.py",
+            "tracer.py"
+          ]
+        }
+      },
+      "cb2d96ddfaae3056804e0052bf53807ffc822d3": {
+        "commit": {
+          "commit_id": "cb2d96ddfaae3056804e0052bf53807ffc822d3e",
+          "commit_message": "Initial commit",
+          "commit_author": "Ram Rachum",
+          "commit_date": "2019-04-20 13:45:11",
+          "commit_parent": ""
+        },
+        "function": {
+          "function_name": "get_write_function",
+          "function_code_before": "",
+          "function_code_after": "def get_write_function(output) -> typing.Callable:\n    if output is None:\n\n        def write(s):\n            stderr = sys.stderr\n            stderr.write(s)\n            stderr.write('\\n')\n    elif isinstance(output, (os.PathLike, str)):\n        output_path = pathlib.Path(output)\n\n        def write(s):\n            with output_path.open('a') as output_file:\n                output_file.write(s)\n                output_file.write('\\n')\n    else:\n        assert isinstance(output, utils.WritableStream)\n\n        def write(s):\n            output.write(s)\n            output.write('\\n')\n    return write",
+          "function_before_start_line": "",
+          "function_before_end_line": "",
+          "function_after_start_line": 21,
+          "function_after_end_line": 39,
+          "function_before_token_count": 0,
+          "function_after_token_count": 55,
+          "functions_name_modified_file": [
+            "__init__",
+            "trace",
+            "get_source_from_frame",
+            "get_shortish_repr",
+            "snoop",
+            "__enter__",
+            "get_local_reprs",
+            "get_write_function",
+            "__exit__"
+          ],
+          "functions_name_all_files": [
+            "_check_methods",
+            "check",
+            "get_write_function",
+            "_check_value",
+            "write",
+            "check_output",
+            "_check_name",
+            "__enter__",
+            "get_local_reprs",
+            "test_pysnooper",
+            "event_name",
+            "_check_source",
+            "get_shortish_repr",
+            "__subclasshook__",
+            "__init__",
+            "trace",
+            "snoop",
+            "get_source_from_frame",
+            "__exit__",
+            "test_variables"
+          ],
+          "functions_name_co_evolved_modified_file": [
+            "__init__",
+            "trace",
+            "get_shortish_repr",
+            "snoop",
+            "__enter__",
+            "get_local_reprs",
+            "get_source_from_frame",
+            "__exit__"
+          ],
+          "functions_name_co_evolved_all_files": [
+            "_check_methods",
+            "check",
+            "_check_value",
+            "write",
+            "check_output",
+            "_check_name",
+            "__enter__",
+            "get_local_reprs",
+            "test_pysnooper",
+            "event_name",
+            "_check_source",
+            "get_shortish_repr",
+            "__subclasshook__",
+            "__init__",
+            "trace",
+            "snoop",
+            "get_source_from_frame",
+            "__exit__",
+            "test_variables"
+          ]
+        },
+        "file": {
+          "file_name": "pysnooper.py",
+          "file_nloc": 142,
+          "file_complexity": 44,
+          "file_token_count": 912,
+          "file_before": null,
+          "file_after": "# Copyright 2019 Ram Rachum.\n# This program is distributed under the MIT license.\n\nfrom __future__ import annotations\n\nimport sys\nimport os\nimport pathlib\nimport inspect\nimport types\nimport typing\nimport datetime as datetime_module\nimport re\nimport collections\n\nimport decorator\n\nfrom . import utils\n\n        \ndef get_write_function(output) -> typing.Callable:\n    if output is None:\n        def write(s):\n            stderr = sys.stderr\n            stderr.write(s)\n            stderr.write('\\n')\n    elif isinstance(output, (os.PathLike, str)):\n        output_path = pathlib.Path(output)\n        def write(s):\n            with output_path.open('a') as output_file:\n                output_file.write(s)\n                output_file.write('\\n')\n    else:\n        assert isinstance(output, utils.WritableStream)\n        def write(s):\n            output.write(s)\n            output.write('\\n')\n            \n    return write\n    \n    \nclass Tracer:\n    def __init__(self, target_code_object: types.CodeType, write: callable, *,\n                 variables: typing.Sequence=()):\n        self.target_code_object = target_code_object\n        self.write = write\n        self.variables = variables\n        self.old_local_reprs = {}\n        self.local_reprs = {}\n        \n        \n    def __enter__(self):\n        self.original_trace_function = sys.gettrace()\n        sys.settrace(self.trace)\n        \n    def __exit__(self, exc_type, exc_value, exc_traceback):\n        sys.settrace(self.original_trace_function)\n        \n    def trace(self: Tracer, frame: types.FrameType, event: str,\n              arg: typing.Any) -> typing.Callable:\n        if frame.f_code != self.target_code_object:\n            return self.trace\n        self.old_local_reprs, self.local_reprs = \\\n             self.local_reprs, get_local_reprs(frame, variables=self.variables)\n        modified_local_reprs = {\n            key: value for key, value in self.local_reprs.items()\n            if (key not in self.old_local_reprs) or\n                                           (self.old_local_reprs[key] != value)\n        }\n        for name, value_repr in modified_local_reprs.items():\n            self.write(f'            ==> {name} = {value_repr}')\n        # x = repr((frame.f_code.co_stacksize, frame, event, arg))\n        now_string = datetime_module.datetime.now().time().isoformat()\n        source_line = get_source_from_frame(frame)[frame.f_lineno - 1]\n        self.write(f'{now_string} {event:9} '\n                   f'{frame.f_lineno:4} {source_line}')\n        return self.trace\n        \n        \n        \nsource_cache_by_module_name = {}\nsource_cache_by_file_name = {}\ndef get_source_from_frame(frame: types.FrameType) -> str:\n    module_name = frame.f_globals.get('__name__') or ''\n    if module_name:\n        try:\n            return source_cache_by_module_name[module_name]\n        except KeyError:\n            pass\n    file_name = frame.f_code.co_filename\n    if file_name:\n        try:\n            return source_cache_by_file_name[file_name]\n        except KeyError:\n            pass\n    function = frame.f_code.co_name\n    loader = frame.f_globals.get('__loader__')\n    \n    source: typing.Union[None, str] = None\n    if hasattr(loader, 'get_source'):\n        try:\n            source = loader.get_source(module_name)\n        except ImportError:\n            pass\n        if source is not None:\n            source = source.splitlines()\n    if source is None:\n        try:\n            with open(file_name, 'rb') as fp:\n                source = fp.read().splitlines()\n        except (OSError, IOError):\n            pass\n    if source is None:\n        raise NotImplementedError\n\n    # If we just read the source from a file, or if the loader did not\n    # apply tokenize.detect_encoding to decode the source into a\n    # string, then we should do that ourselves.\n    if isinstance(source[0], bytes):\n        encoding = 'ascii'\n        for line in source[:2]:\n            # File coding may be specified. Match pattern from PEP-263\n            # (https://www.python.org/dev/peps/pep-0263/)\n            match = re.search(br'coding[:=]\\s*([-\\w.]+)', line)\n            if match:\n                encoding = match.group(1).decode('ascii')\n                break\n        source = [str(sline, encoding, 'replace') for sline in source]\n\n    if module_name:\n        source_cache_by_module_name[module_name] = source\n    if file_name:\n        source_cache_by_file_name[file_name] = source\n    return source\n\ndef get_local_reprs(frame: types.FrameType, *, variables: typing.Sequence=()) -> dict:\n    result = {}\n    for key, value in frame.f_locals.items():\n        try:\n            result[key] = get_shortish_repr(value)\n        except Exception:\n            continue\n    locals_and_globals = collections.ChainMap(frame.f_locals, frame.f_globals)\n    for variable in variables:\n        steps = variable.split('.')\n        step_iterator = iter(steps)\n        try:\n            current = locals_and_globals[next(step_iterator)]\n            for step in step_iterator:\n                current = getattr(current, step)\n        except (KeyError, AttributeError):\n            continue\n        try:\n            result[variable] = get_shortish_repr(current)\n        except Exception:\n            continue\n    return result\n\ndef get_shortish_repr(item) -> str:\n    r = repr(item)\n    if len(r) > 100:\n        r = f'{r[:97]}...'\n    return r\n\n\ndef snoop(output=None, *, variables=()) -> typing.Callable:\n    write = get_write_function(output)\n    @decorator.decorator\n    def decorate(function, *args, **kwargs) -> typing.Callable:\n        target_code_object = function.__code__\n        with Tracer(target_code_object, write, variables=variables):\n            return function(*args, **kwargs)\n    \n    return decorate\n    \n    \n    ",
+          "file_patch": "@@ -0,0 +1,177 @@\n+# Copyright 2019 Ram Rachum.\n+# This program is distributed under the MIT license.\n+\n+from __future__ import annotations\n+\n+import sys\n+import os\n+import pathlib\n+import inspect\n+import types\n+import typing\n+import datetime as datetime_module\n+import re\n+import collections\n+\n+import decorator\n+\n+from . import utils\n+\n+        \n+def get_write_function(output) -> typing.Callable:\n+    if output is None:\n+        def write(s):\n+            stderr = sys.stderr\n+            stderr.write(s)\n+            stderr.write('\\n')\n+    elif isinstance(output, (os.PathLike, str)):\n+        output_path = pathlib.Path(output)\n+        def write(s):\n+            with output_path.open('a') as output_file:\n+                output_file.write(s)\n+                output_file.write('\\n')\n+    else:\n+        assert isinstance(output, utils.WritableStream)\n+        def write(s):\n+            output.write(s)\n+            output.write('\\n')\n+            \n+    return write\n+    \n+    \n+class Tracer:\n+    def __init__(self, target_code_object: types.CodeType, write: callable, *,\n+                 variables: typing.Sequence=()):\n+        self.target_code_object = target_code_object\n+        self.write = write\n+        self.variables = variables\n+        self.old_local_reprs = {}\n+        self.local_reprs = {}\n+        \n+        \n+    def __enter__(self):\n+        self.original_trace_function = sys.gettrace()\n+        sys.settrace(self.trace)\n+        \n+    def __exit__(self, exc_type, exc_value, exc_traceback):\n+        sys.settrace(self.original_trace_function)\n+        \n+    def trace(self: Tracer, frame: types.FrameType, event: str,\n+              arg: typing.Any) -> typing.Callable:\n+        if frame.f_code != self.target_code_object:\n+            return self.trace\n+        self.old_local_reprs, self.local_reprs = \\\n+             self.local_reprs, get_local_reprs(frame, variables=self.variables)\n+        modified_local_reprs = {\n+            key: value for key, value in self.local_reprs.items()\n+            if (key not in self.old_local_reprs) or\n+                                           (self.old_local_reprs[key] != value)\n+        }\n+        for name, value_repr in modified_local_reprs.items():\n+            self.write(f'            ==> {name} = {value_repr}')\n+        # x = repr((frame.f_code.co_stacksize, frame, event, arg))\n+        now_string = datetime_module.datetime.now().time().isoformat()\n+        source_line = get_source_from_frame(frame)[frame.f_lineno - 1]\n+        self.write(f'{now_string} {event:9} '\n+                   f'{frame.f_lineno:4} {source_line}')\n+        return self.trace\n+        \n+        \n+        \n+source_cache_by_module_name = {}\n+source_cache_by_file_name = {}\n+def get_source_from_frame(frame: types.FrameType) -> str:\n+    module_name = frame.f_globals.get('__name__') or ''\n+    if module_name:\n+        try:\n+            return source_cache_by_module_name[module_name]\n+        except KeyError:\n+            pass\n+    file_name = frame.f_code.co_filename\n+    if file_name:\n+        try:\n+            return source_cache_by_file_name[file_name]\n+        except KeyError:\n+            pass\n+    function = frame.f_code.co_name\n+    loader = frame.f_globals.get('__loader__')\n+    \n+    source: typing.Union[None, str] = None\n+    if hasattr(loader, 'get_source'):\n+        try:\n+            source = loader.get_source(module_name)\n+        except ImportError:\n+            pass\n+        if source is not None:\n+            source = source.splitlines()\n+    if source is None:\n+        try:\n+            with open(file_name, 'rb') as fp:\n+                source = fp.read().splitlines()\n+        except (OSError, IOError):\n+            pass\n+    if source is None:\n+        raise NotImplementedError\n+\n+    # If we just read the source from a file, or if the loader did not\n+    # apply tokenize.detect_encoding to decode the source into a\n+    # string, then we should do that ourselves.\n+    if isinstance(source[0], bytes):\n+        encoding = 'ascii'\n+        for line in source[:2]:\n+            # File coding may be specified. Match pattern from PEP-263\n+            # (https://www.python.org/dev/peps/pep-0263/)\n+            match = re.search(br'coding[:=]\\s*([-\\w.]+)', line)\n+            if match:\n+                encoding = match.group(1).decode('ascii')\n+                break\n+        source = [str(sline, encoding, 'replace') for sline in source]\n+\n+    if module_name:\n+        source_cache_by_module_name[module_name] = source\n+    if file_name:\n+        source_cache_by_file_name[file_name] = source\n+    return source\n+\n+def get_local_reprs(frame: types.FrameType, *, variables: typing.Sequence=()) -> dict:\n+    result = {}\n+    for key, value in frame.f_locals.items():\n+        try:\n+            result[key] = get_shortish_repr(value)\n+        except Exception:\n+            continue\n+    locals_and_globals = collections.ChainMap(frame.f_locals, frame.f_globals)\n+    for variable in variables:\n+        steps = variable.split('.')\n+        step_iterator = iter(steps)\n+        try:\n+            current = locals_and_globals[next(step_iterator)]\n+            for step in step_iterator:\n+                current = getattr(current, step)\n+        except (KeyError, AttributeError):\n+            continue\n+        try:\n+            result[variable] = get_shortish_repr(current)\n+        except Exception:\n+            continue\n+    return result\n+\n+def get_shortish_repr(item) -> str:\n+    r = repr(item)\n+    if len(r) > 100:\n+        r = f'{r[:97]}...'\n+    return r\n+\n+\n+def snoop(output=None, *, variables=()) -> typing.Callable:\n+    write = get_write_function(output)\n+    @decorator.decorator\n+    def decorate(function, *args, **kwargs) -> typing.Callable:\n+        target_code_object = function.__code__\n+        with Tracer(target_code_object, write, variables=variables):\n+            return function(*args, **kwargs)\n+    \n+    return decorate\n+    \n+    \n+    \n\\ No newline at end of file\n",
+          "files_name_in_blame_commit": [
+            "utils.py",
+            "setup.py",
+            "pysnooper.py",
+            "test_pysnooper.py",
+            "__init__.py"
+          ]
+        }
+      }
+    }
+  }
+}

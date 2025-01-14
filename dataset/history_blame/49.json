@@ -1,0 +1,169 @@
+{
+  "id": "49",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "469c5a60b0196a24a63936408333a3090d3a99cd",
+      "commit_message": "#N/A Add `replace_argument` helper",
+      "commit_author": "nvbn",
+      "commit_date": "2015-07-24 00:39:56",
+      "commit_parent": "f9f094834926052034ecec1b2fe721dfd465cd56"
+    },
+    "function": {
+      "function_name": "get_new_command",
+      "function_code_before": "@utils.git_support\ndef get_new_command(command, settings):\n    return command.script.replace('push', 'push --force')",
+      "function_code_after": "@utils.git_support\ndef get_new_command(command, settings):\n    return replace_argument(command.script, 'push', 'push --force')",
+      "function_before_start_line": 13,
+      "function_before_end_line": 14,
+      "function_after_start_line": 14,
+      "function_after_end_line": 15,
+      "function_before_token_count": 18,
+      "function_after_token_count": 18,
+      "functions_name_modified_file": [
+        "match",
+        "get_new_command"
+      ],
+      "functions_name_all_files": [
+        "test_sudo_support",
+        "get_new_command",
+        "test_when_can_match",
+        "git_support",
+        "match",
+        "test_without_fallback",
+        "_get_brew_commands",
+        "test_get_all_callables",
+        "get_closest",
+        "_is_brew_tap_cmd_naming",
+        "test_when_cant_match",
+        "get_aliases",
+        "replace_argument",
+        "sudo_support",
+        "_get_brew_tap_specific_commands",
+        "_get_suggests",
+        "_get_directory_names_only",
+        "test_wrap_settings",
+        "get_all_executables",
+        "_get_all_git_matched_commands",
+        "test_replace_argument",
+        "test_memoize",
+        "_get_similar_command",
+        "which",
+        "wrap_settings",
+        "_get_similar_formula",
+        "get_branches",
+        "_get_brew_path_prefix",
+        "memoize",
+        "test_no_memoize",
+        "get_docker_commands"
+      ],
+      "functions_name_co_evolved_modified_file": [],
+      "functions_name_co_evolved_all_files": [
+        "replace_argument",
+        "test_replace_argument"
+      ]
+    },
+    "file": {
+      "file_name": "git_push_force.py",
+      "file_nloc": 12,
+      "file_complexity": 5,
+      "file_token_count": 74,
+      "file_before": "from thefuck import utils\n\n\n@utils.git_support\ndef match(command, settings):\n    return ('push' in command.script\n            and '! [rejected]' in command.stderr\n            and 'failed to push some refs to' in command.stderr\n            and 'Updates were rejected because the tip of your current branch is behind' in command.stderr)\n\n\n@utils.git_support\ndef get_new_command(command, settings):\n    return command.script.replace('push', 'push --force')\n\n\nenabled_by_default = False\n",
+      "file_after": "from thefuck import utils\nfrom thefuck.utils import replace_argument\n\n\n@utils.git_support\ndef match(command, settings):\n    return ('push' in command.script\n            and '! [rejected]' in command.stderr\n            and 'failed to push some refs to' in command.stderr\n            and 'Updates were rejected because the tip of your current branch is behind' in command.stderr)\n\n\n@utils.git_support\ndef get_new_command(command, settings):\n    return replace_argument(command.script, 'push', 'push --force')\n\n\nenabled_by_default = False\n",
+      "file_patch": "@@ -1,4 +1,5 @@\n from thefuck import utils\n+from thefuck.utils import replace_argument\n \n \n @utils.git_support\n@@ -11,7 +12,7 @@ def match(command, settings):\n \n @utils.git_support\n def get_new_command(command, settings):\n-    return command.script.replace('push', 'push --force')\n+    return replace_argument(command.script, 'push', 'push --force')\n \n \n enabled_by_default = False\n",
+      "files_name_in_blame_commit": [
+        "git_fix_stash.py",
+        "cargo_no_command.py",
+        "pip_unknown_command.py",
+        "utils.py",
+        "brew_unknown_command.py",
+        "git_branch_delete.py",
+        "git_push_force.py",
+        "tmux.py",
+        "heroku_not_command.py",
+        "git_not_command.py",
+        "git_checkout.py",
+        "test_utils.py",
+        "docker_not_command.py",
+        "lein_not_task.py",
+        "composer_not_command.py",
+        "git_diff_staged.py",
+        "git_push_pull.py",
+        "brew_install.py",
+        "git_pull_clone.py"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 9
+  },
+  "recursive_blame_commits": {
+    "recursive_blame_function_lines": {
+      "13": {
+        "commit_id": "569709388dd269e1ad7af4a53086dbdf09afd3f7",
+        "line_code": "def get_new_command(command, settings):",
+        "commit_date": "2015-07-20 18:58:11",
+        "valid": 1
+      },
+      "14": {
+        "commit_id": "569709388dd269e1ad7af4a53086dbdf09afd3f7",
+        "line_code": "    return command.script.replace('push', 'push --force')",
+        "commit_date": "2015-07-20 18:58:11",
+        "valid": 1
+      }
+    },
+    "commits": {
+      "569709388dd269e1ad7af4a53086dbdf09afd3f7": {
+        "commit": {
+          "commit_id": "569709388dd269e1ad7af4a53086dbdf09afd3f7",
+          "commit_message": "Add a `git_push_force` rule",
+          "commit_author": "mcarton",
+          "commit_date": "2015-07-20 18:58:11",
+          "commit_parent": "ee87d1c5476f5d831c4304d8e2ab79340eb44fc8"
+        },
+        "function": {
+          "function_name": "get_new_command",
+          "function_code_before": "",
+          "function_code_after": "@utils.git_support\ndef get_new_command(command, settings):\n    return command.script.replace('push', 'push --force')",
+          "function_before_start_line": "",
+          "function_before_end_line": "",
+          "function_after_start_line": 14,
+          "function_after_end_line": 15,
+          "function_before_token_count": 0,
+          "function_after_token_count": 18,
+          "functions_name_modified_file": [
+            "match",
+            "get_new_command"
+          ],
+          "functions_name_all_files": [
+            "test_get_new_command",
+            "get_new_command",
+            "test_match",
+            "match",
+            "test_not_match"
+          ],
+          "functions_name_co_evolved_modified_file": [
+            "match"
+          ],
+          "functions_name_co_evolved_all_files": [
+            "test_not_match",
+            "test_get_new_command",
+            "match",
+            "test_match"
+          ]
+        },
+        "file": {
+          "file_name": "git_push_force.py",
+          "file_nloc": 11,
+          "file_complexity": 6,
+          "file_token_count": 71,
+          "file_before": null,
+          "file_after": "from thefuck import utils\n\n\n@utils.git_support\ndef match(command, settings):\n    return ('git' in command.script\n            and 'push' in command.script\n            and '! [rejected]' in command.stderr\n            and 'failed to push some refs to' in command.stderr\n            and 'Updates were rejected because the tip of your current branch is behind' in command.stderr)\n\n\n@utils.git_support\ndef get_new_command(command, settings):\n    return command.script.replace('push', 'push --force')\n",
+          "file_patch": "@@ -0,0 +1,15 @@\n+from thefuck import utils\n+\n+\n+@utils.git_support\n+def match(command, settings):\n+    return ('git' in command.script\n+            and 'push' in command.script\n+            and '! [rejected]' in command.stderr\n+            and 'failed to push some refs to' in command.stderr\n+            and 'Updates were rejected because the tip of your current branch is behind' in command.stderr)\n+\n+\n+@utils.git_support\n+def get_new_command(command, settings):\n+    return command.script.replace('push', 'push --force')\n",
+          "files_name_in_blame_commit": [
+            "git_push_force.py",
+            "test_git_push_force.py"
+          ]
+        }
+      }
+    }
+  }
+}

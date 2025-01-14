@@ -1,0 +1,60 @@
+{
+  "id": "52",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "15e13d7c1a3b5733c84139e89b09d105bb70de93",
+      "commit_message": "add(rule): add the new git_diff_staged rule",
+      "commit_author": "Pablo Santiago Blum de Aguiar",
+      "commit_date": "2015-05-29 18:41:53",
+      "commit_parent": "3194913965130a7a8e06dc8641c7e8476ea96bec"
+    },
+    "function": {
+      "function_name": "get_new_command",
+      "function_code_before": "",
+      "function_code_after": "def get_new_command(command, settings):\n    return '{} --staged'.format(command.script)",
+      "function_before_start_line": "",
+      "function_before_end_line": "",
+      "function_after_start_line": 5,
+      "function_after_end_line": 6,
+      "function_before_token_count": 0,
+      "function_after_token_count": 16,
+      "functions_name_modified_file": [
+        "match",
+        "get_new_command"
+      ],
+      "functions_name_all_files": [
+        "test_get_new_command",
+        "get_new_command",
+        "test_match",
+        "match",
+        "test_not_match"
+      ],
+      "functions_name_co_evolved_modified_file": [
+        "match"
+      ],
+      "functions_name_co_evolved_all_files": [
+        "test_not_match",
+        "test_get_new_command",
+        "match",
+        "test_match"
+      ]
+    },
+    "file": {
+      "file_name": "git_diff_staged.py",
+      "file_nloc": 4,
+      "file_complexity": 2,
+      "file_token_count": 34,
+      "file_before": null,
+      "file_after": "def match(command, settings):\n    return command.script.startswith('git d')\n\n\ndef get_new_command(command, settings):\n    return '{} --staged'.format(command.script)\n",
+      "file_patch": "@@ -0,0 +1,6 @@\n+def match(command, settings):\n+    return command.script.startswith('git d')\n+\n+\n+def get_new_command(command, settings):\n+    return '{} --staged'.format(command.script)\n",
+      "files_name_in_blame_commit": [
+        "test_git_diff_staged.py",
+        "git_diff_staged.py"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 3
+  },
+  "recursive_blame_commits": {}
+}

@@ -1,0 +1,53 @@
+{
+  "id": "13",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "57585d44cdab40a98c392bedaf1492544eebc417",
+      "commit_message": "Implement read_user_choice in prompt.py",
+      "commit_author": "Raphael Pierzina",
+      "commit_date": "2015-05-24 18:48:41",
+      "commit_parent": "092216bfcf5c944650a6d429992ea568b3848b19"
+    },
+    "function": {
+      "function_name": "read_user_choice",
+      "function_code_before": "",
+      "function_code_after": "def read_user_choice(var_name, options):\n    \"\"\"Prompt the user to choose from several options for the given variable.\n\n    The first item will be returned if no input happens.\n\n    :param str var_name: Variable as specified in the context\n    :param list options: Sequence of options that are available to select from\n    :return: Exactly one item of ``options`` that has been chosen by the user\n    \"\"\"\n    if not isinstance(options, list):\n        raise TypeError\n    if not options:\n        raise ValueError\n    if not all((isinstance(opt, str) for opt in options)):\n        raise TypeError\n    choice_map = OrderedDict(((str(i), value) for (i, value) in enumerate(options, 1)))\n    choices = choice_map.keys()\n    default = '1'\n    choice_lines = ['{} - {}'.format(*c) for c in choice_map.items()]\n    prompt = '\\n'.join(('Select {}:'.format(var_name), '\\n'.join(choice_lines), 'Choose from {}'.format(', '.join(choices))))\n    user_choice = click.prompt(prompt, type=click.Choice(choices), default=default)\n    return choice_map[user_choice]",
+      "function_before_start_line": "",
+      "function_before_end_line": "",
+      "function_after_start_line": 48,
+      "function_after_end_line": 83,
+      "function_before_token_count": 0,
+      "function_after_token_count": 156,
+      "functions_name_modified_file": [
+        "prompt_for_config",
+        "read_user_yes_no",
+        "read_user_variable",
+        "read_user_choice"
+      ],
+      "functions_name_all_files": [
+        "prompt_for_config",
+        "read_user_yes_no",
+        "read_user_variable",
+        "read_user_choice"
+      ],
+      "functions_name_co_evolved_modified_file": [],
+      "functions_name_co_evolved_all_files": []
+    },
+    "file": {
+      "file_name": "prompt.py",
+      "file_nloc": 54,
+      "file_complexity": 14,
+      "file_token_count": 323,
+      "file_before": "#!/usr/bin/env python\n# -*- coding: utf-8 -*-\n\n\"\"\"\ncookiecutter.prompt\n---------------------\n\nFunctions for prompting the user for project info.\n\"\"\"\n\nfrom __future__ import unicode_literals\n\nimport click\n\nfrom .compat import iteritems, is_string\nfrom jinja2.environment import Environment\n\n\ndef read_user_variable(var_name, default_value):\n    \"\"\"Prompt the user for the given variable and return the entered value\n    or the given default.\n\n    :param str var_name: Variable of the context to query the user\n    :param default_value: Value that will be returned if no input happens\n    \"\"\"\n    # Please see http://click.pocoo.org/4/api/#click.prompt\n    return click.prompt(var_name, default=default_value)\n\n\ndef read_user_yes_no(question, default_value):\n    \"\"\"Prompt the user to reply with 'yes' or 'no' (or equivalent values).\n\n    Note:\n      Possible choices are 'true', '1', 'yes', 'y' or 'false', '0', 'no', 'n'\n\n    :param str question: Question to the user\n    :param default_value: Value that will be returned if no input happens\n    \"\"\"\n    # Please see http://click.pocoo.org/4/api/#click.prompt\n    return click.prompt(\n        question,\n        default=default_value,\n        type=click.BOOL\n    )\n\n\ndef prompt_for_config(context, no_input=False):\n    \"\"\"\n    Prompts the user to enter new config, using context as a source for the\n    field names and sample values.\n\n    :param no_input: Prompt the user at command line for manual configuration?\n    \"\"\"\n    cookiecutter_dict = {}\n    env = Environment()\n\n    for key, raw in iteritems(context['cookiecutter']):\n        if key.startswith('_'):\n            cookiecutter_dict[key] = raw\n            continue\n\n        raw = raw if is_string(raw) else str(raw)\n        val = env.from_string(raw).render(cookiecutter=cookiecutter_dict)\n\n        if not no_input:\n            val = read_user_variable(key, val)\n\n        cookiecutter_dict[key] = val\n    return cookiecutter_dict\n",
+      "file_after": "#!/usr/bin/env python\n# -*- coding: utf-8 -*-\n\n\"\"\"\ncookiecutter.prompt\n---------------------\n\nFunctions for prompting the user for project info.\n\"\"\"\n\nfrom __future__ import unicode_literals\nfrom collections import OrderedDict\n\nimport click\n\nfrom .compat import iteritems, is_string\nfrom jinja2.environment import Environment\n\n\ndef read_user_variable(var_name, default_value):\n    \"\"\"Prompt the user for the given variable and return the entered value\n    or the given default.\n\n    :param str var_name: Variable of the context to query the user\n    :param default_value: Value that will be returned if no input happens\n    \"\"\"\n    # Please see http://click.pocoo.org/4/api/#click.prompt\n    return click.prompt(var_name, default=default_value)\n\n\ndef read_user_yes_no(question, default_value):\n    \"\"\"Prompt the user to reply with 'yes' or 'no' (or equivalent values).\n\n    Note:\n      Possible choices are 'true', '1', 'yes', 'y' or 'false', '0', 'no', 'n'\n\n    :param str question: Question to the user\n    :param default_value: Value that will be returned if no input happens\n    \"\"\"\n    # Please see http://click.pocoo.org/4/api/#click.prompt\n    return click.prompt(\n        question,\n        default=default_value,\n        type=click.BOOL\n    )\n\n\ndef read_user_choice(var_name, options):\n    \"\"\"Prompt the user to choose from several options for the given variable.\n\n    The first item will be returned if no input happens.\n\n    :param str var_name: Variable as specified in the context\n    :param list options: Sequence of options that are available to select from\n    :return: Exactly one item of ``options`` that has been chosen by the user\n    \"\"\"\n    # Please see http://click.pocoo.org/4/api/#click.prompt\n    if not isinstance(options, list):\n        raise TypeError\n\n    if not options:\n        raise ValueError\n\n    if not all(isinstance(opt, str) for opt in options):\n        raise TypeError\n\n    choice_map = OrderedDict(\n        (str(i), value) for i, value in enumerate(options, 1)\n    )\n    choices = choice_map.keys()\n    default = '1'\n\n    choice_lines = ['{} - {}'.format(*c) for c in choice_map.items()]\n    prompt = '\\n'.join((\n        'Select {}:'.format(var_name),\n        '\\n'.join(choice_lines),\n        'Choose from {}'.format(', '.join(choices))\n    ))\n\n    user_choice = click.prompt(\n        prompt, type=click.Choice(choices), default=default\n    )\n    return choice_map[user_choice]\n\n\ndef prompt_for_config(context, no_input=False):\n    \"\"\"\n    Prompts the user to enter new config, using context as a source for the\n    field names and sample values.\n\n    :param no_input: Prompt the user at command line for manual configuration?\n    \"\"\"\n    cookiecutter_dict = {}\n    env = Environment()\n\n    for key, raw in iteritems(context['cookiecutter']):\n        if key.startswith('_'):\n            cookiecutter_dict[key] = raw\n            continue\n\n        raw = raw if is_string(raw) else str(raw)\n        val = env.from_string(raw).render(cookiecutter=cookiecutter_dict)\n\n        if not no_input:\n            val = read_user_variable(key, val)\n\n        cookiecutter_dict[key] = val\n    return cookiecutter_dict\n",
+      "file_patch": "@@ -9,6 +9,7 @@ Functions for prompting the user for project info.\n \"\"\"\n \n from __future__ import unicode_literals\n+from collections import OrderedDict\n \n import click\n \n@@ -44,6 +45,44 @@ def read_user_yes_no(question, default_value):\n     )\n \n \n+def read_user_choice(var_name, options):\n+    \"\"\"Prompt the user to choose from several options for the given variable.\n+\n+    The first item will be returned if no input happens.\n+\n+    :param str var_name: Variable as specified in the context\n+    :param list options: Sequence of options that are available to select from\n+    :return: Exactly one item of ``options`` that has been chosen by the user\n+    \"\"\"\n+    # Please see http://click.pocoo.org/4/api/#click.prompt\n+    if not isinstance(options, list):\n+        raise TypeError\n+\n+    if not options:\n+        raise ValueError\n+\n+    if not all(isinstance(opt, str) for opt in options):\n+        raise TypeError\n+\n+    choice_map = OrderedDict(\n+        (str(i), value) for i, value in enumerate(options, 1)\n+    )\n+    choices = choice_map.keys()\n+    default = '1'\n+\n+    choice_lines = ['{} - {}'.format(*c) for c in choice_map.items()]\n+    prompt = '\\n'.join((\n+        'Select {}:'.format(var_name),\n+        '\\n'.join(choice_lines),\n+        'Choose from {}'.format(', '.join(choices))\n+    ))\n+\n+    user_choice = click.prompt(\n+        prompt, type=click.Choice(choices), default=default\n+    )\n+    return choice_map[user_choice]\n+\n+\n def prompt_for_config(context, no_input=False):\n     \"\"\"\n     Prompts the user to enter new config, using context as a source for the\n",
+      "files_name_in_blame_commit": [
+        "prompt.py"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 60
+  },
+  "recursive_blame_commits": {}
+}

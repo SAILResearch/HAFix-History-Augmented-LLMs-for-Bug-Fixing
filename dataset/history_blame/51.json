@@ -1,0 +1,58 @@
+{
+  "id": "51",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "d3146aa0aca57522820f5bdb0a22f5b248de407e",
+      "commit_message": "Addressed Issue #210",
+      "commit_author": "Cami Diez",
+      "commit_date": "2015-05-23 23:18:15",
+      "commit_parent": "190e47ecdbbfbe4ca56726af26cfee66c060908c"
+    },
+    "function": {
+      "function_name": "get_new_command",
+      "function_code_before": "",
+      "function_code_after": "def get_new_command(command, settings):\n    return 'open http://' + command.script[5:]",
+      "function_before_start_line": "",
+      "function_before_end_line": "",
+      "function_after_start_line": 23,
+      "function_after_end_line": 24,
+      "function_before_token_count": 0,
+      "function_after_token_count": 17,
+      "functions_name_modified_file": [
+        "match",
+        "get_new_command"
+      ],
+      "functions_name_all_files": [
+        "test_get_new_command",
+        "match",
+        "get_new_command",
+        "test_match"
+      ],
+      "functions_name_co_evolved_modified_file": [
+        "match"
+      ],
+      "functions_name_co_evolved_all_files": [
+        "test_get_new_command",
+        "match",
+        "test_match"
+      ]
+    },
+    "file": {
+      "file_name": "open.py",
+      "file_nloc": 12,
+      "file_complexity": 9,
+      "file_token_count": 81,
+      "file_before": null,
+      "file_after": "# Opens URL's in the default web browser\n# \n# Example:\n# > open github.com\n# The file ~/github.com does not exist.\n# Perhaps you meant 'http://github.com'?\n#\n# \n\ndef match(command, settings):\n\treturn (command.script.startswith ('open')\n\t\t\tand (\n\t\t\t# Wanted to use this:\n\t\t\t# 'http' in command.stderr\n\t\t\t'.com' in command.script\n\t\t\tor '.net' in command.script\n\t\t\tor '.org' in command.script\n\t\t\tor '.ly' in command.script\n\t\t\tor '.io' in command.script\n\t\t\tor '.se' in command.script\n\t\t\tor '.edu' in command.script))\n\ndef get_new_command(command, settings):\n\treturn 'open http://' + command.script[5:]\n",
+      "file_patch": "@@ -0,0 +1,24 @@\n+# Opens URL's in the default web browser\n+# \n+# Example:\n+# > open github.com\n+# The file ~/github.com does not exist.\n+# Perhaps you meant 'http://github.com'?\n+#\n+# \n+\n+def match(command, settings):\n+\treturn (command.script.startswith ('open')\n+\t\t\tand (\n+\t\t\t# Wanted to use this:\n+\t\t\t# 'http' in command.stderr\n+\t\t\t'.com' in command.script\n+\t\t\tor '.net' in command.script\n+\t\t\tor '.org' in command.script\n+\t\t\tor '.ly' in command.script\n+\t\t\tor '.io' in command.script\n+\t\t\tor '.se' in command.script\n+\t\t\tor '.edu' in command.script))\n+\n+def get_new_command(command, settings):\n+\treturn 'open http://' + command.script[5:]\n",
+      "files_name_in_blame_commit": [
+        "open.py",
+        "test_open.py"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 5
+  },
+  "recursive_blame_commits": {}
+}

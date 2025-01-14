@@ -1,0 +1,327 @@
+{
+  "id": "27",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "7874bb9f13cc4ec797925adc99bf58742071ed6c",
+      "commit_message": "PY3 port utils.request",
+      "commit_author": "Mikhail Korobov",
+      "commit_date": "2015-07-25 17:14:56",
+      "commit_parent": "f750ee4c006859391957d45d14f620d1c407576e"
+    },
+    "function": {
+      "function_name": "request_httprepr",
+      "function_code_before": "def request_httprepr(request):\n    \"\"\"Return the raw HTTP representation (as string) of the given request.\n    This is provided only for reference since it's not the actual stream of\n    bytes that will be send when performing the request (that's controlled\n    by Twisted).\n    \"\"\"\n    parsed = urlparse_cached(request)\n    path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))\n    s = '%s %s HTTP/1.1\\r\\n' % (request.method, path)\n    s += 'Host: %s\\r\\n' % parsed.hostname\n    if request.headers:\n        s += request.headers.to_string() + '\\r\\n'\n    s += '\\r\\n'\n    s += request.body\n    return s",
+      "function_code_after": "def request_httprepr(request):\n    \"\"\"Return the raw HTTP representation (as string) of the given request.\n    This is provided only for reference since it's not the actual stream of\n    bytes that will be send when performing the request (that's controlled\n    by Twisted).\n    \"\"\"\n    parsed = urlparse_cached(request)\n    path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))\n    s = to_bytes(request.method) + b' ' + to_bytes(path) + b' HTTP/1.1\\r\\n'\n    s += b'Host: ' + to_bytes(parsed.hostname) + b'\\r\\n'\n    if request.headers:\n        s += request.headers.to_string() + b'\\r\\n'\n    s += b'\\r\\n'\n    s += request.body\n    return s",
+      "function_before_start_line": 69,
+      "function_before_end_line": 83,
+      "function_after_start_line": 73,
+      "function_after_end_line": 87,
+      "function_before_token_count": 82,
+      "function_after_token_count": 99,
+      "functions_name_modified_file": [
+        "request_httprepr",
+        "request_authenticate",
+        "request_fingerprint"
+      ],
+      "functions_name_all_files": [
+        "test_request_httprepr",
+        "test_request_authenticate",
+        "request_httprepr",
+        "test_request_fingerprint",
+        "request_authenticate",
+        "request_fingerprint"
+      ],
+      "functions_name_co_evolved_modified_file": [
+        "request_fingerprint"
+      ],
+      "functions_name_co_evolved_all_files": [
+        "test_request_httprepr",
+        "test_request_authenticate",
+        "test_request_fingerprint",
+        "request_fingerprint"
+      ]
+    },
+    "file": {
+      "file_name": "request.py",
+      "file_nloc": 44,
+      "file_complexity": 13,
+      "file_token_count": 340,
+      "file_before": "\"\"\"\nThis module provides some useful functions for working with\nscrapy.http.Request objects\n\"\"\"\n\nfrom __future__ import print_function\nimport hashlib\nimport weakref\nfrom six.moves.urllib.parse import urlunparse\n\nfrom twisted.internet.defer import Deferred\nfrom w3lib.http import basic_auth_header\n\nfrom scrapy.utils.url import canonicalize_url\nfrom scrapy.utils.httpobj import urlparse_cached\n\n\n_fingerprint_cache = weakref.WeakKeyDictionary()\ndef request_fingerprint(request, include_headers=None):\n    \"\"\"\n    Return the request fingerprint.\n\n    The request fingerprint is a hash that uniquely identifies the resource the\n    request points to. For example, take the following two urls:\n\n    http://www.example.com/query?id=111&cat=222\n    http://www.example.com/query?cat=222&id=111\n\n    Even though those are two different URLs both point to the same resource\n    and are equivalent (ie. they should return the same response).\n\n    Another example are cookies used to store session ids. Suppose the\n    following page is only accesible to authenticated users:\n\n    http://www.example.com/members/offers.html\n\n    Lot of sites use a cookie to store the session id, which adds a random\n    component to the HTTP Request and thus should be ignored when calculating\n    the fingerprint.\n\n    For this reason, request headers are ignored by default when calculating\n    the fingeprint. If you want to include specific headers use the\n    include_headers argument, which is a list of Request headers to include.\n\n    \"\"\"\n    if include_headers:\n        include_headers = tuple([h.lower() for h in sorted(include_headers)])\n    cache = _fingerprint_cache.setdefault(request, {})\n    if include_headers not in cache:\n        fp = hashlib.sha1()\n        fp.update(request.method)\n        fp.update(canonicalize_url(request.url))\n        fp.update(request.body or '')\n        if include_headers:\n            for hdr in include_headers:\n                if hdr in request.headers:\n                    fp.update(hdr)\n                    for v in request.headers.getlist(hdr):\n                        fp.update(v)\n        cache[include_headers] = fp.hexdigest()\n    return cache[include_headers]\n\ndef request_authenticate(request, username, password):\n    \"\"\"Autenticate the given request (in place) using the HTTP basic access\n    authentication mechanism (RFC 2617) and the given username and password\n    \"\"\"\n    request.headers['Authorization'] = basic_auth_header(username, password)\n\ndef request_httprepr(request):\n    \"\"\"Return the raw HTTP representation (as string) of the given request.\n    This is provided only for reference since it's not the actual stream of\n    bytes that will be send when performing the request (that's controlled\n    by Twisted).\n    \"\"\"\n    parsed = urlparse_cached(request)\n    path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))\n    s  = \"%s %s HTTP/1.1\\r\\n\" % (request.method, path)\n    s += \"Host: %s\\r\\n\" % parsed.hostname\n    if request.headers:\n        s += request.headers.to_string() + \"\\r\\n\"\n    s += \"\\r\\n\"\n    s += request.body\n    return s\n\n",
+      "file_after": "\"\"\"\nThis module provides some useful functions for working with\nscrapy.http.Request objects\n\"\"\"\n\nfrom __future__ import print_function\nimport hashlib\nimport weakref\nfrom six.moves.urllib.parse import urlunparse\n\nfrom twisted.internet.defer import Deferred\nfrom w3lib.http import basic_auth_header\nfrom scrapy.utils.python import to_bytes, to_native_str\n\nfrom scrapy.utils.url import canonicalize_url\nfrom scrapy.utils.httpobj import urlparse_cached\n\n\n_fingerprint_cache = weakref.WeakKeyDictionary()\ndef request_fingerprint(request, include_headers=None):\n    \"\"\"\n    Return the request fingerprint.\n\n    The request fingerprint is a hash that uniquely identifies the resource the\n    request points to. For example, take the following two urls:\n\n    http://www.example.com/query?id=111&cat=222\n    http://www.example.com/query?cat=222&id=111\n\n    Even though those are two different URLs both point to the same resource\n    and are equivalent (ie. they should return the same response).\n\n    Another example are cookies used to store session ids. Suppose the\n    following page is only accesible to authenticated users:\n\n    http://www.example.com/members/offers.html\n\n    Lot of sites use a cookie to store the session id, which adds a random\n    component to the HTTP Request and thus should be ignored when calculating\n    the fingerprint.\n\n    For this reason, request headers are ignored by default when calculating\n    the fingeprint. If you want to include specific headers use the\n    include_headers argument, which is a list of Request headers to include.\n\n    \"\"\"\n    if include_headers:\n        include_headers = tuple([to_bytes(h.lower())\n                                 for h in sorted(include_headers)])\n    cache = _fingerprint_cache.setdefault(request, {})\n    if include_headers not in cache:\n        fp = hashlib.sha1()\n        fp.update(to_bytes(request.method))\n        fp.update(to_bytes(canonicalize_url(request.url)))\n        fp.update(request.body or b'')\n        if include_headers:\n            for hdr in include_headers:\n                if hdr in request.headers:\n                    fp.update(hdr)\n                    for v in request.headers.getlist(hdr):\n                        fp.update(v)\n        cache[include_headers] = fp.hexdigest()\n    return cache[include_headers]\n\n\ndef request_authenticate(request, username, password):\n    \"\"\"Autenticate the given request (in place) using the HTTP basic access\n    authentication mechanism (RFC 2617) and the given username and password\n    \"\"\"\n    request.headers['Authorization'] = basic_auth_header(username, password)\n\n\ndef request_httprepr(request):\n    \"\"\"Return the raw HTTP representation (as string) of the given request.\n    This is provided only for reference since it's not the actual stream of\n    bytes that will be send when performing the request (that's controlled\n    by Twisted).\n    \"\"\"\n    parsed = urlparse_cached(request)\n    path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))\n    s = to_bytes(request.method) + b\" \" + to_bytes(path) + b\" HTTP/1.1\\r\\n\"\n    s += b\"Host: \" + to_bytes(parsed.hostname) + b\"\\r\\n\"\n    if request.headers:\n        s += request.headers.to_string() + b\"\\r\\n\"\n    s += b\"\\r\\n\"\n    s += request.body\n    return s\n\n",
+      "file_patch": "@@ -10,6 +10,7 @@ from six.moves.urllib.parse import urlunparse\n \n from twisted.internet.defer import Deferred\n from w3lib.http import basic_auth_header\n+from scrapy.utils.python import to_bytes, to_native_str\n \n from scrapy.utils.url import canonicalize_url\n from scrapy.utils.httpobj import urlparse_cached\n@@ -44,13 +45,14 @@ def request_fingerprint(request, include_headers=None):\n \n     \"\"\"\n     if include_headers:\n-        include_headers = tuple([h.lower() for h in sorted(include_headers)])\n+        include_headers = tuple([to_bytes(h.lower())\n+                                 for h in sorted(include_headers)])\n     cache = _fingerprint_cache.setdefault(request, {})\n     if include_headers not in cache:\n         fp = hashlib.sha1()\n-        fp.update(request.method)\n-        fp.update(canonicalize_url(request.url))\n-        fp.update(request.body or '')\n+        fp.update(to_bytes(request.method))\n+        fp.update(to_bytes(canonicalize_url(request.url)))\n+        fp.update(request.body or b'')\n         if include_headers:\n             for hdr in include_headers:\n                 if hdr in request.headers:\n@@ -60,12 +62,14 @@ def request_fingerprint(request, include_headers=None):\n         cache[include_headers] = fp.hexdigest()\n     return cache[include_headers]\n \n+\n def request_authenticate(request, username, password):\n     \"\"\"Autenticate the given request (in place) using the HTTP basic access\n     authentication mechanism (RFC 2617) and the given username and password\n     \"\"\"\n     request.headers['Authorization'] = basic_auth_header(username, password)\n \n+\n def request_httprepr(request):\n     \"\"\"Return the raw HTTP representation (as string) of the given request.\n     This is provided only for reference since it's not the actual stream of\n@@ -74,11 +78,11 @@ def request_httprepr(request):\n     \"\"\"\n     parsed = urlparse_cached(request)\n     path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))\n-    s  = \"%s %s HTTP/1.1\\r\\n\" % (request.method, path)\n-    s += \"Host: %s\\r\\n\" % parsed.hostname\n+    s = to_bytes(request.method) + b\" \" + to_bytes(path) + b\" HTTP/1.1\\r\\n\"\n+    s += b\"Host: \" + to_bytes(parsed.hostname) + b\"\\r\\n\"\n     if request.headers:\n-        s += request.headers.to_string() + \"\\r\\n\"\n-    s += \"\\r\\n\"\n+        s += request.headers.to_string() + b\"\\r\\n\"\n+    s += b\"\\r\\n\"\n     s += request.body\n     return s\n \n",
+      "files_name_in_blame_commit": [
+        "test_utils_request.py",
+        "request.py"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 19
+  },
+  "recursive_blame_commits": {
+    "recursive_blame_function_lines": {
+      "69": {
+        "commit_id": "9da66698f3766a4c7d897b84763a8a311eb60769",
+        "line_code": "def request_httprepr(request):",
+        "commit_date": "2009-07-25 18:56:12",
+        "valid": 1
+      },
+      "70": {
+        "commit_id": "9da66698f3766a4c7d897b84763a8a311eb60769",
+        "line_code": "    \"\"\"Return the raw HTTP representation (as string) of the given request.",
+        "commit_date": "2009-07-25 18:56:12",
+        "valid": 1
+      },
+      "71": {
+        "commit_id": "9da66698f3766a4c7d897b84763a8a311eb60769",
+        "line_code": "    This is provided only for reference since it's not the actual stream of",
+        "commit_date": "2009-07-25 18:56:12",
+        "valid": 1
+      },
+      "72": {
+        "commit_id": "9da66698f3766a4c7d897b84763a8a311eb60769",
+        "line_code": "    bytes that will be send when performing the request (that's controlled",
+        "commit_date": "2009-07-25 18:56:12",
+        "valid": 1
+      },
+      "73": {
+        "commit_id": "9da66698f3766a4c7d897b84763a8a311eb60769",
+        "line_code": "    by Twisted).",
+        "commit_date": "2009-07-25 18:56:12",
+        "valid": 1
+      },
+      "74": {
+        "commit_id": "9da66698f3766a4c7d897b84763a8a311eb60769",
+        "line_code": "    \"\"\"",
+        "commit_date": "2009-07-25 18:56:12",
+        "valid": 1
+      },
+      "75": {
+        "commit_id": "b8aa74ee9ec6546ff615d7f0759bb2bcff50e1d5",
+        "line_code": "    parsed = urlparse_cached(request)",
+        "commit_date": "2010-07-15 12:04:55",
+        "valid": 1
+      },
+      "76": {
+        "commit_id": "b8aa74ee9ec6546ff615d7f0759bb2bcff50e1d5",
+        "line_code": "    path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))",
+        "commit_date": "2010-07-15 12:04:55",
+        "valid": 1
+      },
+      "77": {
+        "commit_id": "b8aa74ee9ec6546ff615d7f0759bb2bcff50e1d5",
+        "line_code": "    s  = \"%s %s HTTP/1.1\\r\\n\" % (request.method, path)",
+        "commit_date": "2010-07-15 12:04:55",
+        "valid": 1
+      },
+      "78": {
+        "commit_id": "b8aa74ee9ec6546ff615d7f0759bb2bcff50e1d5",
+        "line_code": "    s += \"Host: %s\\r\\n\" % parsed.hostname",
+        "commit_date": "2010-07-15 12:04:55",
+        "valid": 1
+      },
+      "79": {
+        "commit_id": "9da66698f3766a4c7d897b84763a8a311eb60769",
+        "line_code": "    if request.headers:",
+        "commit_date": "2009-07-25 18:56:12",
+        "valid": 1
+      },
+      "80": {
+        "commit_id": "9da66698f3766a4c7d897b84763a8a311eb60769",
+        "line_code": "        s += request.headers.to_string() + \"\\r\\n\"",
+        "commit_date": "2009-07-25 18:56:12",
+        "valid": 1
+      },
+      "81": {
+        "commit_id": "9da66698f3766a4c7d897b84763a8a311eb60769",
+        "line_code": "    s += \"\\r\\n\"",
+        "commit_date": "2009-07-25 18:56:12",
+        "valid": 1
+      },
+      "82": {
+        "commit_id": "9da66698f3766a4c7d897b84763a8a311eb60769",
+        "line_code": "    s += request.body",
+        "commit_date": "2009-07-25 18:56:12",
+        "valid": 1
+      },
+      "83": {
+        "commit_id": "9da66698f3766a4c7d897b84763a8a311eb60769",
+        "line_code": "    return s",
+        "commit_date": "2009-07-25 18:56:12",
+        "valid": 1
+      }
+    },
+    "commits": {
+      "b8aa74ee9ec6546ff615d7f0759bb2bcff50e1d5": {
+        "commit": {
+          "commit_id": "b8aa74ee9ec6546ff615d7f0759bb2bcff50e1d5",
+          "commit_message": "bugfix in request_httprepr() function",
+          "commit_author": "Pablo Hoffman",
+          "commit_date": "2010-07-15 12:04:55",
+          "commit_parent": "ec850b9fd131d2a1f2555c70649ca90001757f4b"
+        },
+        "function": {
+          "function_name": "request_httprepr",
+          "function_code_before": "def request_httprepr(request):\n    \"\"\"Return the raw HTTP representation (as string) of the given request.\n    This is provided only for reference since it's not the actual stream of\n    bytes that will be send when performing the request (that's controlled\n    by Twisted).\n    \"\"\"\n    hostname = urlparse_cached(request).hostname\n    s = '%s %s HTTP/1.1\\r\\n' % (request.method, request.url)\n    s += 'Host: %s\\r\\n' % hostname\n    if request.headers:\n        s += request.headers.to_string() + '\\r\\n'\n    s += '\\r\\n'\n    s += request.body\n    return s",
+          "function_code_after": "def request_httprepr(request):\n    \"\"\"Return the raw HTTP representation (as string) of the given request.\n    This is provided only for reference since it's not the actual stream of\n    bytes that will be send when performing the request (that's controlled\n    by Twisted).\n    \"\"\"\n    parsed = urlparse_cached(request)\n    path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))\n    s = '%s %s HTTP/1.1\\r\\n' % (request.method, path)\n    s += 'Host: %s\\r\\n' % parsed.hostname\n    if request.headers:\n        s += request.headers.to_string() + '\\r\\n'\n    s += '\\r\\n'\n    s += request.body\n    return s",
+          "function_before_start_line": 73,
+          "function_before_end_line": 86,
+          "function_after_start_line": 74,
+          "function_after_end_line": 88,
+          "function_before_token_count": 58,
+          "function_after_token_count": 82,
+          "functions_name_modified_file": [
+            "request_httprepr",
+            "request_info",
+            "request_authenticate",
+            "request_fingerprint"
+          ],
+          "functions_name_all_files": [
+            "test_request_httprepr",
+            "test_request_authenticate",
+            "request_httprepr",
+            "test_request_fingerprint",
+            "request_info",
+            "request_authenticate",
+            "request_fingerprint"
+          ],
+          "functions_name_co_evolved_modified_file": [],
+          "functions_name_co_evolved_all_files": [
+            "test_request_httprepr"
+          ]
+        },
+        "file": {
+          "file_name": "request.py",
+          "file_nloc": 44,
+          "file_complexity": 14,
+          "file_token_count": 323,
+          "file_before": "\"\"\"\nThis module provides some useful functions for working with\nscrapy.http.Request objects\n\"\"\"\n\nimport hashlib\nimport weakref\nfrom base64 import urlsafe_b64encode\n\nfrom scrapy.utils.url import canonicalize_url\nfrom scrapy.utils.httpobj import urlparse_cached\n\n\n_fingerprint_cache = weakref.WeakKeyDictionary()\ndef request_fingerprint(request, include_headers=None):\n    \"\"\"\n    Return the request fingerprint.\n    \n    The request fingerprint is a hash that uniquely identifies the resource the\n    request points to. For example, take the following two urls:\n    \n    http://www.example.com/query?id=111&cat=222\n    http://www.example.com/query?cat=222&id=111\n\n    Even though those are two different URLs both point to the same resource\n    and are equivalent (ie. they should return the same response).\n\n    Another example are cookies used to store session ids. Suppose the\n    following page is only accesible to authenticated users:\n    \n    http://www.example.com/members/offers.html\n\n    Lot of sites use a cookie to store the session id, which adds a random\n    component to the HTTP Request and thus should be ignored when calculating\n    the fingerprint. \n    \n    For this reason, request headers are ignored by default when calculating\n    the fingeprint. If you want to include specific headers use the\n    include_headers argument, which is a list of Request headers to include.\n\n    \"\"\"\n    if include_headers:\n        include_headers = tuple([h.lower() for h in sorted(include_headers)])\n    cache = _fingerprint_cache.setdefault(request, {})\n    if include_headers not in cache:\n        fp = hashlib.sha1()\n        fp.update(request.method)\n        fp.update(canonicalize_url(request.url))\n        fp.update(request.body or '')\n        if include_headers:\n            for hdr in include_headers:\n                if hdr in request.headers:\n                    fp.update(hdr)\n                    for v in request.headers.getlist(hdr):\n                        fp.update(v)\n        cache[include_headers] = fp.hexdigest()\n    return cache[include_headers]\n\ndef request_authenticate(request, username, password):\n    \"\"\"Autenticate the given request (in place) using the HTTP basic access\n    authentication mechanism (RFC 2617) and the given username and password\n    \"\"\"\n    b64userpass = urlsafe_b64encode(\"%s:%s\" % (username, password))\n    request.headers['Authorization'] = 'Basic ' + b64userpass\n\ndef request_info(request):\n    \"\"\"Return a short string with request info including method, url and\n    fingeprint. Mainly used for debugging\n    \"\"\"\n    fp = request_fingerprint(request)\n    return \"<Request: %s %s (%s..)>\" % (request.method, request.url, fp[:8])\n\ndef request_httprepr(request):\n    \"\"\"Return the raw HTTP representation (as string) of the given request.\n    This is provided only for reference since it's not the actual stream of\n    bytes that will be send when performing the request (that's controlled\n    by Twisted).\n    \"\"\"\n    hostname = urlparse_cached(request).hostname\n    s  = \"%s %s HTTP/1.1\\r\\n\" % (request.method, request.url)\n    s += \"Host: %s\\r\\n\" % hostname\n    if request.headers:\n        s += request.headers.to_string() + \"\\r\\n\"\n    s += \"\\r\\n\"\n    s += request.body\n    return s\n",
+          "file_after": "\"\"\"\nThis module provides some useful functions for working with\nscrapy.http.Request objects\n\"\"\"\n\nimport hashlib\nimport weakref\nfrom base64 import urlsafe_b64encode\nfrom urlparse import urlunparse\n\nfrom scrapy.utils.url import canonicalize_url\nfrom scrapy.utils.httpobj import urlparse_cached\n\n\n_fingerprint_cache = weakref.WeakKeyDictionary()\ndef request_fingerprint(request, include_headers=None):\n    \"\"\"\n    Return the request fingerprint.\n    \n    The request fingerprint is a hash that uniquely identifies the resource the\n    request points to. For example, take the following two urls:\n    \n    http://www.example.com/query?id=111&cat=222\n    http://www.example.com/query?cat=222&id=111\n\n    Even though those are two different URLs both point to the same resource\n    and are equivalent (ie. they should return the same response).\n\n    Another example are cookies used to store session ids. Suppose the\n    following page is only accesible to authenticated users:\n    \n    http://www.example.com/members/offers.html\n\n    Lot of sites use a cookie to store the session id, which adds a random\n    component to the HTTP Request and thus should be ignored when calculating\n    the fingerprint. \n    \n    For this reason, request headers are ignored by default when calculating\n    the fingeprint. If you want to include specific headers use the\n    include_headers argument, which is a list of Request headers to include.\n\n    \"\"\"\n    if include_headers:\n        include_headers = tuple([h.lower() for h in sorted(include_headers)])\n    cache = _fingerprint_cache.setdefault(request, {})\n    if include_headers not in cache:\n        fp = hashlib.sha1()\n        fp.update(request.method)\n        fp.update(canonicalize_url(request.url))\n        fp.update(request.body or '')\n        if include_headers:\n            for hdr in include_headers:\n                if hdr in request.headers:\n                    fp.update(hdr)\n                    for v in request.headers.getlist(hdr):\n                        fp.update(v)\n        cache[include_headers] = fp.hexdigest()\n    return cache[include_headers]\n\ndef request_authenticate(request, username, password):\n    \"\"\"Autenticate the given request (in place) using the HTTP basic access\n    authentication mechanism (RFC 2617) and the given username and password\n    \"\"\"\n    b64userpass = urlsafe_b64encode(\"%s:%s\" % (username, password))\n    request.headers['Authorization'] = 'Basic ' + b64userpass\n\ndef request_info(request):\n    \"\"\"Return a short string with request info including method, url and\n    fingeprint. Mainly used for debugging\n    \"\"\"\n    fp = request_fingerprint(request)\n    return \"<Request: %s %s (%s..)>\" % (request.method, request.url, fp[:8])\n\ndef request_httprepr(request):\n    \"\"\"Return the raw HTTP representation (as string) of the given request.\n    This is provided only for reference since it's not the actual stream of\n    bytes that will be send when performing the request (that's controlled\n    by Twisted).\n    \"\"\"\n    parsed = urlparse_cached(request)\n    path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))\n    s  = \"%s %s HTTP/1.1\\r\\n\" % (request.method, path)\n    s += \"Host: %s\\r\\n\" % parsed.hostname\n    if request.headers:\n        s += request.headers.to_string() + \"\\r\\n\"\n    s += \"\\r\\n\"\n    s += request.body\n    return s\n",
+          "file_patch": "@@ -6,6 +6,7 @@ scrapy.http.Request objects\n import hashlib\n import weakref\n from base64 import urlsafe_b64encode\n+from urlparse import urlunparse\n \n from scrapy.utils.url import canonicalize_url\n from scrapy.utils.httpobj import urlparse_cached\n@@ -76,9 +77,10 @@ def request_httprepr(request):\n     bytes that will be send when performing the request (that's controlled\n     by Twisted).\n     \"\"\"\n-    hostname = urlparse_cached(request).hostname\n-    s  = \"%s %s HTTP/1.1\\r\\n\" % (request.method, request.url)\n-    s += \"Host: %s\\r\\n\" % hostname\n+    parsed = urlparse_cached(request)\n+    path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))\n+    s  = \"%s %s HTTP/1.1\\r\\n\" % (request.method, path)\n+    s += \"Host: %s\\r\\n\" % parsed.hostname\n     if request.headers:\n         s += request.headers.to_string() + \"\\r\\n\"\n     s += \"\\r\\n\"\n",
+          "files_name_in_blame_commit": [
+            "test_utils_request.py",
+            "request.py"
+          ]
+        }
+      },
+      "9da66698f3766a4c7d897b84763a8a311eb60769": {
+        "commit": {
+          "commit_id": "9da66698f3766a4c7d897b84763a8a311eb60769",
+          "commit_message": "moved httprepr() method (from Request and Response objects) to scrapy.utils functions",
+          "commit_author": "Pablo Hoffman",
+          "commit_date": "2009-07-25 18:56:12",
+          "commit_parent": "bed3c38014f26595d48231e7ad80618384b29b12"
+        },
+        "function": {
+          "function_name": "request_httprepr",
+          "function_code_before": "",
+          "function_code_after": "def request_httprepr(request):\n    \"\"\"Return the raw HTTP representation (as string) of the given request.\n    This is provided only for reference since it's not the actual stream of\n    bytes that will be send when performing the request (that's controlled\n    by Twisted).\n    \"\"\"\n    s = '%s %s HTTP/1.1\\r\\n' % (request.method, request.url)\n    s += 'Host: %s\\r\\n' % request.url.hostname\n    if request.headers:\n        s += request.headers.to_string() + '\\r\\n'\n    s += '\\r\\n'\n    s += request.body\n    return s",
+          "function_before_start_line": "",
+          "function_before_end_line": "",
+          "function_after_start_line": 75,
+          "function_after_end_line": 88,
+          "function_before_token_count": 0,
+          "function_after_token_count": 54,
+          "functions_name_modified_file": [
+            "request_httprepr",
+            "request_info",
+            "request_authenticate",
+            "request_fingerprint"
+          ],
+          "functions_name_all_files": [
+            "set_url",
+            "test_from_response_override_params",
+            "body_or_str",
+            "test_response_httprepr",
+            "test_custom_encoding",
+            "test_body_or_str_input",
+            "test_eq",
+            "set_body",
+            "request_fingerprint",
+            "test_copy_inherited_classes",
+            "process_spider_input",
+            "test_request_httprepr",
+            "test_get_meta_refresh",
+            "test_from_response_post",
+            "test_empty_formdata",
+            "process_request",
+            "request_info",
+            "test_encoding",
+            "test_url",
+            "response_status_message",
+            "_assert_response_values",
+            "test_xml_encoding",
+            "test_init",
+            "engine_stopped",
+            "request_httprepr",
+            "get_meta_refresh",
+            "test_copy",
+            "test_replace",
+            "test_headers",
+            "test_default_encoding",
+            "process_response",
+            "process_spider_output",
+            "replace",
+            "process_item",
+            "__str__",
+            "request_authenticate",
+            "__repr__",
+            "encoding",
+            "__init__",
+            "test_from_response_errors_formnumber",
+            "test_basic",
+            "test_body_or_str_extraction",
+            "test_multi_key_values",
+            "response_httprepr",
+            "process_exception",
+            "test_from_response_errors_noform",
+            "test_request_authenticate",
+            "test_request_fingerprint",
+            "domain_closed",
+            "copy",
+            "test_body_or_str_encoding",
+            "get_base_url",
+            "test_html_encoding",
+            "test_get_base_url",
+            "test_from_response_get",
+            "test_text_response",
+            "test_body"
+          ],
+          "functions_name_co_evolved_modified_file": [],
+          "functions_name_co_evolved_all_files": [
+            "process_spider_input",
+            "test_request_httprepr",
+            "test_get_meta_refresh",
+            "response_httprepr",
+            "process_request",
+            "test_httprepr",
+            "test_request_fingerprint",
+            "test_response_httprepr",
+            "process_response",
+            "httprepr"
+          ]
+        },
+        "file": {
+          "file_name": "request.py",
+          "file_nloc": 68,
+          "file_complexity": 12,
+          "file_token_count": 281,
+          "file_before": "\"\"\"\nThis module provides some useful functions for working with\nscrapy.http.Request objects\n\"\"\"\n\nimport hashlib\nfrom base64 import urlsafe_b64encode\n\nfrom scrapy.utils.url import canonicalize_url\n\ndef request_fingerprint(request, include_headers=()):\n    \"\"\"\n    Return the request fingerprint.\n    \n    The request fingerprint is a hash that uniquely identifies the resource the\n    request points to. For example, take the following two urls:\n    \n    http://www.example.com/query?id=111&cat=222\n    http://www.example.com/query?cat=222&id=111\n\n    Even though those are two different URLs both point to the same resource\n    and are equivalent (ie. they should return the same response).\n\n    Another example are cookies used to store session ids. Suppose the\n    following page is only accesible to authenticated users:\n    \n    http://www.example.com/members/offers.html\n\n    Lot of sites use a cookie to store the session id, which adds a random\n    component to the HTTP Request and thus should be ignored when calculating\n    the fingerprint. \n    \n    For this reason, request headers are ignored by default when calculating\n    the fingeprint. If you want to include specific headers use the\n    include_headers argument, which is a list of Request headers to include.\n\n    \"\"\"\n\n    if include_headers:\n        include_headers = [h.lower() for h in sorted(include_headers)]\n        cachekey = 'fingerprint' + '_'.join(include_headers)\n    else:\n        cachekey = 'fingerprint'\n\n    try:\n        return request.cache[cachekey]\n    except KeyError:\n        fp = hashlib.sha1()\n        fp.update(request.method)\n        fp.update(canonicalize_url(request.url))\n        fp.update(request.body or '')\n        for hdr in include_headers:\n            if hdr in request.headers:\n                fp.update(hdr)\n                for v in request.headers.getlist(hdr):\n                    fp.update(v)\n        fphash = fp.hexdigest()\n        request.cache[cachekey] = fphash\n        return fphash\n\ndef request_authenticate(request, username, password):\n    \"\"\"Autenticate the given request (in place) using the HTTP basic access\n    authentication mechanism (RFC 2617) and the given username and password\n    \"\"\"\n    b64userpass = urlsafe_b64encode(\"%s:%s\" % (username, password))\n    request.headers['Authorization'] = 'Basic ' + b64userpass\n\ndef request_info(request):\n    \"\"\"Return a short string with request info including method, url and\n    fingeprint. Mainly used for debugging\n    \"\"\"\n    fp = request_fingerprint(request)\n    return \"<Request: %s %s (%s..)>\" % (request.method, request.url, fp[:8])\n\n",
+          "file_after": "\"\"\"\nThis module provides some useful functions for working with\nscrapy.http.Request objects\n\"\"\"\n\nimport hashlib\nfrom base64 import urlsafe_b64encode\n\nfrom scrapy.utils.url import canonicalize_url\n\ndef request_fingerprint(request, include_headers=()):\n    \"\"\"\n    Return the request fingerprint.\n    \n    The request fingerprint is a hash that uniquely identifies the resource the\n    request points to. For example, take the following two urls:\n    \n    http://www.example.com/query?id=111&cat=222\n    http://www.example.com/query?cat=222&id=111\n\n    Even though those are two different URLs both point to the same resource\n    and are equivalent (ie. they should return the same response).\n\n    Another example are cookies used to store session ids. Suppose the\n    following page is only accesible to authenticated users:\n    \n    http://www.example.com/members/offers.html\n\n    Lot of sites use a cookie to store the session id, which adds a random\n    component to the HTTP Request and thus should be ignored when calculating\n    the fingerprint. \n    \n    For this reason, request headers are ignored by default when calculating\n    the fingeprint. If you want to include specific headers use the\n    include_headers argument, which is a list of Request headers to include.\n\n    \"\"\"\n\n    if include_headers:\n        include_headers = [h.lower() for h in sorted(include_headers)]\n        cachekey = 'fingerprint' + '_'.join(include_headers)\n    else:\n        cachekey = 'fingerprint'\n\n    try:\n        return request.cache[cachekey]\n    except KeyError:\n        fp = hashlib.sha1()\n        fp.update(request.method)\n        fp.update(canonicalize_url(request.url))\n        fp.update(request.body or '')\n        for hdr in include_headers:\n            if hdr in request.headers:\n                fp.update(hdr)\n                for v in request.headers.getlist(hdr):\n                    fp.update(v)\n        fphash = fp.hexdigest()\n        request.cache[cachekey] = fphash\n        return fphash\n\ndef request_authenticate(request, username, password):\n    \"\"\"Autenticate the given request (in place) using the HTTP basic access\n    authentication mechanism (RFC 2617) and the given username and password\n    \"\"\"\n    b64userpass = urlsafe_b64encode(\"%s:%s\" % (username, password))\n    request.headers['Authorization'] = 'Basic ' + b64userpass\n\ndef request_info(request):\n    \"\"\"Return a short string with request info including method, url and\n    fingeprint. Mainly used for debugging\n    \"\"\"\n    fp = request_fingerprint(request)\n    return \"<Request: %s %s (%s..)>\" % (request.method, request.url, fp[:8])\n\ndef request_httprepr(request):\n    \"\"\"Return the raw HTTP representation (as string) of the given request.\n    This is provided only for reference since it's not the actual stream of\n    bytes that will be send when performing the request (that's controlled\n    by Twisted).\n    \"\"\"\n\n    s  = \"%s %s HTTP/1.1\\r\\n\" % (request.method, request.url)\n    s += \"Host: %s\\r\\n\" % request.url.hostname\n    if request.headers:\n        s += request.headers.to_string() + \"\\r\\n\"\n    s += \"\\r\\n\"\n    s += request.body\n    return s\n",
+          "file_patch": "@@ -72,3 +72,17 @@ def request_info(request):\n     fp = request_fingerprint(request)\n     return \"<Request: %s %s (%s..)>\" % (request.method, request.url, fp[:8])\n \n+def request_httprepr(request):\n+    \"\"\"Return the raw HTTP representation (as string) of the given request.\n+    This is provided only for reference since it's not the actual stream of\n+    bytes that will be send when performing the request (that's controlled\n+    by Twisted).\n+    \"\"\"\n+\n+    s  = \"%s %s HTTP/1.1\\r\\n\" % (request.method, request.url)\n+    s += \"Host: %s\\r\\n\" % request.url.hostname\n+    if request.headers:\n+        s += request.headers.to_string() + \"\\r\\n\"\n+    s += \"\\r\\n\"\n+    s += request.body\n+    return s\n",
+          "files_name_in_blame_commit": [
+            "stats.py",
+            "itemsampler.py",
+            "test_utils_request.py",
+            "request.py",
+            "test_utils_response.py",
+            "test_http_request.py",
+            "response.py",
+            "__init__.py",
+            "test_http_response.py"
+          ]
+        }
+      }
+    }
+  }
+}

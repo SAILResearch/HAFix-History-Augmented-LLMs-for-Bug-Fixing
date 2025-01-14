@@ -1,0 +1,882 @@
+{
+  "id": "14",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "37c7c85a86bb6472d6918dd87c99ea6a2170037f",
+      "commit_message": "\ud83d\udcab New JSON helpers, training data internals & CLI rewrite (#2932)\n\n* Support nowrap setting in util.prints\r\n\r\n* Tidy up and fix whitespace\r\n\r\n* Simplify script and use read_jsonl helper\r\n\r\n* Add JSON schemas (see #2928)\r\n\r\n* Deprecate Doc.print_tree\r\n\r\nWill be replaced with Doc.to_json, which will produce a unified format\r\n\r\n* Add Doc.to_json() method (see #2928)\r\n\r\nConverts Doc objects to JSON using the same unified format as the training data. Method also supports serializing selected custom attributes in the doc._. space.\r\n\r\n* Remove outdated test\r\n\r\n* Add write_json and write_jsonl helpers\r\n\r\n* WIP: Update spacy train\r\n\r\n* Tidy up spacy train\r\n\r\n* WIP: Use wasabi for formatting\r\n\r\n* Add GoldParse helpers for JSON format\r\n\r\n* WIP: add debug-data command\r\n\r\n* Fix typo\r\n\r\n* Add missing import\r\n\r\n* Update wasabi pin\r\n\r\n* Add missing import\r\n\r\n* \ud83d\udcab Refactor CLI (#2943)\r\n\r\nTo be merged into #2932.\r\n\r\n## Description\r\n- [x] refactor CLI To use [`wasabi`](https://github.com/ines/wasabi)\r\n- [x] use [`black`](https://github.com/ambv/black) for auto-formatting\r\n- [x] add `flake8` config\r\n- [x] move all messy UD-related scripts to `cli.ud`\r\n- [x] make converters function that take the opened file and return the converted data (instead of having them handle the IO)\r\n\r\n### Types of change\r\nenhancement\r\n\r\n## Checklist\r\n<!--- Before you submit the PR, go over this checklist and make sure you can\r\ntick off all the boxes. [] -> [x] -->\r\n- [x] I have submitted the spaCy Contributor Agreement.\r\n- [x] I ran the tests, and all new and existing tests passed.\r\n- [x] My changes don't require a change to the documentation, or if they do, I've added all required information.\r\n\r\n* Update wasabi pin\r\n\r\n* Delete old test\r\n\r\n* Update errors\r\n\r\n* Fix typo\r\n\r\n* Tidy up and format remaining code\r\n\r\n* Fix formatting\r\n\r\n* Improve formatting of messages\r\n\r\n* Auto-format remaining code\r\n\r\n* Add tok2vec stuff to spacy.train\r\n\r\n* Fix typo\r\n\r\n* Update wasabi pin\r\n\r\n* Fix path checks for when train() is called as function\r\n\r\n* Reformat and tidy up pretrain script\r\n\r\n* Update argument annotations\r\n\r\n* Raise error if model language doesn't match lang\r\n\r\n* Document new train command",
+      "commit_author": "Ines Montani",
+      "commit_date": "2018-11-30 20:16:14",
+      "commit_parent": "0369db75c1faa9679ba8d3fa0fce3909ff4c0b14"
+    },
+    "function": {
+      "function_name": "read_conllx",
+      "function_code_before": "def read_conllx(input_path, use_morphology=False, n=0):\n    text = input_path.open('r', encoding='utf-8').read()\n    i = 0\n    for sent in text.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n                parts = line.split('\\t')\n                (id_, word, lemma, pos, tag, morph, head, dep, _1, iob) = parts\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = int(head) - 1 if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = pos if tag == '_' else tag\n                    tag = tag + '__' + morph if use_morphology else tag\n                    tokens.append((id_, word, tag, head, dep, iob))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break",
+      "function_code_after": "def read_conllx(input_data, use_morphology=False, n=0):\n    i = 0\n    for sent in input_data.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n                parts = line.split('\\t')\n                (id_, word, lemma, pos, tag, morph, head, dep, _1, iob) = parts\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = int(head) - 1 if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = pos if tag == '_' else tag\n                    tag = tag + '__' + morph if use_morphology else tag\n                    tokens.append((id_, word, tag, head, dep, iob))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break",
+      "function_before_start_line": 70,
+      "function_before_end_line": 99,
+      "function_after_start_line": 54,
+      "function_after_end_line": 82,
+      "function_before_token_count": 248,
+      "function_after_token_count": 232,
+      "functions_name_modified_file": [
+        "generate_sentence",
+        "read_conllx",
+        "simplify_tags",
+        "is_ner",
+        "create_doc",
+        "conllu2json"
+      ],
+      "functions_name_all_files": [
+        "convert",
+        "load_deprel_weights",
+        "test_displacy_spans",
+        "_load_file",
+        "test_doc_to_json_valid_training",
+        "test_doc_api_serialize",
+        "load",
+        "from_disk",
+        "golds_to_gold_tuples",
+        "evaluate",
+        "test_doc_api_merge_hang",
+        "test_util_is_package",
+        "open_file",
+        "conll_ner2json",
+        "read_data",
+        "from_bytes",
+        "build_options",
+        "print_results",
+        "_test_ok",
+        "conllubio2json",
+        "test_gold_biluo_BL",
+        "escape_html",
+        "b_to_str",
+        "_load_vectors",
+        "get_package_path",
+        "_render_parses",
+        "conllu2json",
+        "ner_jsonl2json",
+        "models_warning",
+        "test_doc_api_runtime_error",
+        "create_pretraining_model",
+        "load_model_from_path",
+        "split_text",
+        "evaluate_wrapper",
+        "normalize_slice",
+        "pop",
+        "clean",
+        "test_phrase_matcher_string_attrs",
+        "test_equal_with_multiword",
+        "__init__",
+        "get_compatibility",
+        "generate_sentence",
+        "create_model",
+        "download",
+        "make_update",
+        "is_package",
+        "generate_cython",
+        "stream_texts",
+        "compile_prefix_regex",
+        "_warn",
+        "set_env_log",
+        "is_in_jupyter",
+        "deprecation_warning",
+        "generate_meta",
+        "render_parses",
+        "get_schema",
+        "chdir",
+        "_get_examples_without_label",
+        "get_model_row",
+        "test_displacy_parse_deps",
+        "print_markdown",
+        "minibatch",
+        "_get_warn_types",
+        "_get_warn_excl",
+        "read_jsonl",
+        "_test_exception",
+        "read_conllx",
+        "add_codes",
+        "test_phrase_matcher_length",
+        "reformat_version",
+        "test_doc_api_retokenizer_attrs",
+        "validate",
+        "_make_gold",
+        "initialize_pipeline",
+        "test_doc_api_similarity_match",
+        "_get_ner_counts",
+        "masked_language_model",
+        "decaying",
+        "make_docs",
+        "next",
+        "main",
+        "read_attrs_from_deprecated",
+        "get_data_path",
+        "simplify_tags",
+        "read_conllu",
+        "write_jsonl",
+        "setup_package",
+        "test_displacy_raises_for_wrong_type",
+        "test_doc_api_merge_children",
+        "test_gold_biluo_misalign",
+        "_compile_gold",
+        "test_prefer_gpu",
+        "print_progress",
+        "test_doc_to_json_underscore",
+        "load_model_from_link",
+        "is_model_path",
+        "itershuffle",
+        "load_model",
+        "_format_labels",
+        "_get_labels_from_model",
+        "parse_texts",
+        "test_doc_api_sents_empty_string",
+        "is_json_serializable",
+        "to_bytes",
+        "get_token_conllu",
+        "ensure_path",
+        "get_model_pkgs",
+        "doc",
+        "test_require_gpu",
+        "iob2json",
+        "test_util_ensure_path_succeeds",
+        "get_version",
+        "get_lang_class",
+        "test_util_get_package_path",
+        "get_async",
+        "_read_inputs",
+        "_get_metrics",
+        "get_entry_points",
+        "normalize_string_keys",
+        "create_file",
+        "download_model",
+        "use_gpu",
+        "guess_fused_orths",
+        "minibatch_by_words",
+        "_get_attr_unless_lookup",
+        "package",
+        "compounding",
+        "list_models",
+        "test_exception",
+        "compile_infix_regex",
+        "test_json_schema_training_invalid",
+        "test_alignment",
+        "read_iob",
+        "test_doc_api_merge",
+        "get_model_meta",
+        "test_roundtrip_offsets_biluo_conversion",
+        "test_PrecomputableAffine",
+        "test_matcher_phrase_matcher",
+        "test_doc_api_retokenizer",
+        "init_model",
+        "_find_best",
+        "build_extensions",
+        "_collate_best_model",
+        "serve",
+        "test_phrase_matcher_string_attrs_negative",
+        "training_schema",
+        "set_data_path",
+        "test_doc_api_retokenizer_lex_attrs",
+        "write_conllu",
+        "read_json",
+        "add_vectors",
+        "link",
+        "_load_words",
+        "to_disk",
+        "write_json",
+        "train",
+        "load_nlp",
+        "fix_random_seed",
+        "user_warning",
+        "stepping",
+        "test_gold_biluo_U",
+        "get_vectors_loss",
+        "get_model_links",
+        "__setitem__",
+        "test_doc_to_json_underscore_error_attr",
+        "test_phrase_matcher_bool_attrs",
+        "get_cuda_stream",
+        "parse_ents",
+        "parse_deps",
+        "read_regex",
+        "symlink_remove",
+        "load_model_from_package",
+        "load_conllu_file",
+        "create_doc",
+        "add_lookups",
+        "render",
+        "apply_mask",
+        "getattr_",
+        "test_doc_api_right_edge",
+        "expand_exc",
+        "minify_html",
+        "test_json_schema_training_valid",
+        "get_raw_input",
+        "test_lowest_common_ancestor",
+        "load_conllu",
+        "is_ner",
+        "_get_token_conllu",
+        "get_token_split_end",
+        "test_displacy_parse_ents",
+        "get_json",
+        "is_config",
+        "load_model_from_init_py",
+        "symlink_to",
+        "test_doc_api_compare_by_string_position",
+        "set_lang_class",
+        "is_source_release",
+        "test_doc_to_json",
+        "test_equal",
+        "pretrain",
+        "validate_json",
+        "is_compat",
+        "read_clusters",
+        "read_vectors",
+        "test_doc_to_json_underscore_error_serialize",
+        "update",
+        "read_freqs",
+        "test_json_schema_get",
+        "test_phrase_matcher_contains",
+        "replace_word",
+        "debug_data",
+        "test_doc_api_has_vector",
+        "test_doc_api_set_ents",
+        "test_gold_biluo_BIL",
+        "profile",
+        "update_exc",
+        "get_token_split_start",
+        "import_file",
+        "info",
+        "test_doc_api_getitem",
+        "compile_suffix_regex",
+        "_load_pretrained_tok2vec",
+        "env_opt",
+        "app"
+      ],
+      "functions_name_co_evolved_modified_file": [
+        "create_doc",
+        "conllu2json",
+        "is_ner",
+        "simplify_tags"
+      ],
+      "functions_name_co_evolved_all_files": [
+        "convert",
+        "_load_file",
+        "test_doc_to_json_valid_training",
+        "load",
+        "golds_to_gold_tuples",
+        "evaluate",
+        "open_file",
+        "conll_ner2json",
+        "read_data",
+        "print_results",
+        "conllubio2json",
+        "_load_vectors",
+        "_render_parses",
+        "conllu2json",
+        "ner_jsonl2json",
+        "create_pretraining_model",
+        "split_text",
+        "__init__",
+        "get_compatibility",
+        "create_model",
+        "download",
+        "make_update",
+        "stream_texts",
+        "generate_meta",
+        "render_parses",
+        "get_schema",
+        "merge_sentences",
+        "_get_examples_without_label",
+        "get_model_row",
+        "read_jsonl",
+        "reformat_version",
+        "validate",
+        "_make_gold",
+        "initialize_pipeline",
+        "_get_ner_counts",
+        "read_inputs",
+        "masked_language_model",
+        "next",
+        "main",
+        "read_attrs_from_deprecated",
+        "simplify_tags",
+        "read_conllu",
+        "write_jsonl",
+        "parse_tree",
+        "setup_package",
+        "_compile_gold",
+        "print_progress",
+        "test_doc_to_json_underscore",
+        "test_parse_tree",
+        "is_model_path",
+        "locale_escape",
+        "_get_labels_from_model",
+        "_format_labels",
+        "is_json_serializable",
+        "test_docs_to_json",
+        "get_token_conllu",
+        "get_model_pkgs",
+        "doc",
+        "iob2json",
+        "get_version",
+        "_read_inputs",
+        "create_file",
+        "download_model",
+        "guess_fused_orths",
+        "prints",
+        "package",
+        "list_models",
+        "test_json_schema_training_invalid",
+        "read_iob",
+        "read_conll_ner",
+        "validate_meta",
+        "init_model",
+        "_find_best",
+        "_collate_best_model",
+        "serve",
+        "training_schema",
+        "write_conllu",
+        "add_vectors",
+        "link",
+        "print_info",
+        "load_texts",
+        "write_json",
+        "train",
+        "load_nlp",
+        "POS_tree",
+        "_wrap",
+        "prefer_gpu",
+        "get_vectors_loss",
+        "get_model_links",
+        "test_doc_to_json_underscore_error_attr",
+        "merge_ents",
+        "format_POS",
+        "make_vocab",
+        "create_doc",
+        "get_row",
+        "apply_mask",
+        "test_json_schema_training_valid",
+        "load_conllu",
+        "is_ner",
+        "_get_token_conllu",
+        "get_token_split_end",
+        "get_json",
+        "test_doc_to_json",
+        "pretrain",
+        "validate_json",
+        "create_dirs",
+        "read_clusters",
+        "print_table",
+        "read_vectors",
+        "test_doc_to_json_underscore_error_serialize",
+        "test_json_schema_get",
+        "read_freqs",
+        "replace_word",
+        "debug_data",
+        "profile",
+        "get_token_split_start",
+        "info",
+        "_load_pretrained_tok2vec"
+      ]
+    },
+    "file": {
+      "file_name": "conllu2json.py",
+      "file_nloc": 99,
+      "file_complexity": 35,
+      "file_token_count": 670,
+      "file_before": "# coding: utf8\nfrom __future__ import unicode_literals\n\nfrom .._messages import Messages\nfrom ...compat import json_dumps, path2str\nfrom ...util import prints\nfrom ...gold import iob_to_biluo\nimport re\n\n\ndef conllu2json(input_path, output_path, n_sents=10, use_morphology=False, lang=None):\n\n    \"\"\"\n    Convert conllu files into JSON format for use with train cli.\n    use_morphology parameter enables appending morphology to tags, which is\n    useful for languages such as Spanish, where UD tags are not so rich.\n    \"\"\"\n    # by @dvsrepo, via #11 explosion/spacy-dev-resources\n\n    \"\"\"     \n    Extract NER tags if available and convert them so that they follow\n    BILUO and the Wikipedia scheme\n    \"\"\"\n    # by @katarkor\n\n    docs = []\n    sentences = []\n    conll_tuples = read_conllx(input_path, use_morphology=use_morphology)\n    checked_for_ner = False\n    has_ner_tags = False\n\n    for i, (raw_text, tokens) in enumerate(conll_tuples):\n        sentence, brackets = tokens[0]\n        if not checked_for_ner:\n            has_ner_tags = is_ner(sentence[5][0])\n            checked_for_ner = True\n        sentences.append(generate_sentence(sentence, has_ner_tags))\n        # Real-sized documents could be extracted using the comments on the\n        # conluu document\n\n        if(len(sentences) % n_sents == 0):\n            doc = create_doc(sentences, i)\n            docs.append(doc)\n            sentences = []\n\n    output_filename = input_path.parts[-1].replace(\".conll\", \".json\")\n    output_filename = input_path.parts[-1].replace(\".conllu\", \".json\")\n    output_file = output_path / output_filename\n    with output_file.open('w', encoding='utf-8') as f:\n        f.write(json_dumps(docs))\n    prints(Messages.M033.format(n_docs=len(docs)),\n           title=Messages.M032.format(name=path2str(output_file)))\n\n\ndef is_ner(tag):\n\n    \"\"\" \n    Check the 10th column of the first token to determine if the file contains\n    NER tags \n    \"\"\"\n\n    tag_match = re.match('([A-Z_]+)-([A-Z_]+)', tag)\n    if tag_match:\n        return True\n    elif tag == \"O\":\n        return True\n    else:\n        return False\n\ndef read_conllx(input_path, use_morphology=False, n=0):\n    text = input_path.open('r', encoding='utf-8').read()\n    i = 0\n    for sent in text.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n\n                parts = line.split('\\t')\n                id_, word, lemma, pos, tag, morph, head, dep, _1, iob = parts\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = (int(head) - 1) if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = pos if tag == '_' else tag\n                    tag = tag+'__'+morph  if use_morphology else tag\n                    tokens.append((id_, word, tag, head, dep, iob))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break\n\ndef simplify_tags(iob):\n   \n    \"\"\"\n    Simplify tags obtained from the dataset in order to follow Wikipedia\n    scheme (PER, LOC, ORG, MISC). 'PER', 'LOC' and 'ORG' keep their tags, while\n    'GPE_LOC' is simplified to 'LOC', 'GPE_ORG' to 'ORG' and all remaining tags to\n    'MISC'.     \n    \"\"\"\n\n    new_iob = []\n    for tag in iob:\n        tag_match = re.match('([A-Z_]+)-([A-Z_]+)', tag)\n        if tag_match:\n            prefix = tag_match.group(1)\n            suffix = tag_match.group(2)\n            if suffix == 'GPE_LOC':\n                suffix = 'LOC'\n            elif suffix == 'GPE_ORG':\n                suffix = 'ORG'\n            elif suffix != 'PER' and suffix != 'LOC' and suffix != 'ORG':\n                suffix = 'MISC'\n            tag = prefix + '-' + suffix\n        new_iob.append(tag)\n    return new_iob\n\ndef generate_sentence(sent, has_ner_tags):\n    (id_, word, tag, head, dep, iob) = sent\n    sentence = {}\n    tokens = []\n    if has_ner_tags:\n        iob = simplify_tags(iob)\n        biluo = iob_to_biluo(iob)\n    for i, id in enumerate(id_):\n        token = {}\n        token[\"id\"] = id\n        token[\"orth\"] = word[i]\n        token[\"tag\"] = tag[i]\n        token[\"head\"] = head[i] - id\n        token[\"dep\"] = dep[i]\n        if has_ner_tags:\n            token[\"ner\"] = biluo[i]\n        tokens.append(token)\n    sentence[\"tokens\"] = tokens\n    return sentence\n\n\ndef create_doc(sentences,id):\n    doc = {}\n    paragraph = {}\n    doc[\"id\"] = id\n    doc[\"paragraphs\"] = []\n    paragraph[\"sentences\"] = sentences\n    doc[\"paragraphs\"].append(paragraph)\n    return doc\n",
+      "file_after": "# coding: utf8\nfrom __future__ import unicode_literals\n\nimport re\n\nfrom ...gold import iob_to_biluo\n\n\ndef conllu2json(input_data, n_sents=10, use_morphology=False, lang=None):\n    \"\"\"\n    Convert conllu files into JSON format for use with train cli.\n    use_morphology parameter enables appending morphology to tags, which is\n    useful for languages such as Spanish, where UD tags are not so rich.\n\n    Extract NER tags if available and convert them so that they follow\n    BILUO and the Wikipedia scheme\n    \"\"\"\n    # by @dvsrepo, via #11 explosion/spacy-dev-resources\n    # by @katarkor\n    docs = []\n    sentences = []\n    conll_tuples = read_conllx(input_data, use_morphology=use_morphology)\n    checked_for_ner = False\n    has_ner_tags = False\n    for i, (raw_text, tokens) in enumerate(conll_tuples):\n        sentence, brackets = tokens[0]\n        if not checked_for_ner:\n            has_ner_tags = is_ner(sentence[5][0])\n            checked_for_ner = True\n        sentences.append(generate_sentence(sentence, has_ner_tags))\n        # Real-sized documents could be extracted using the comments on the\n        # conluu document\n        if len(sentences) % n_sents == 0:\n            doc = create_doc(sentences, i)\n            docs.append(doc)\n            sentences = []\n    return docs\n\n\ndef is_ner(tag):\n    \"\"\"\n    Check the 10th column of the first token to determine if the file contains\n    NER tags\n    \"\"\"\n    tag_match = re.match(\"([A-Z_]+)-([A-Z_]+)\", tag)\n    if tag_match:\n        return True\n    elif tag == \"O\":\n        return True\n    else:\n        return False\n\n\ndef read_conllx(input_data, use_morphology=False, n=0):\n    i = 0\n    for sent in input_data.strip().split(\"\\n\\n\"):\n        lines = sent.strip().split(\"\\n\")\n        if lines:\n            while lines[0].startswith(\"#\"):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n\n                parts = line.split(\"\\t\")\n                id_, word, lemma, pos, tag, morph, head, dep, _1, iob = parts\n                if \"-\" in id_ or \".\" in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = (int(head) - 1) if head != \"0\" else id_\n                    dep = \"ROOT\" if dep == \"root\" else dep\n                    tag = pos if tag == \"_\" else tag\n                    tag = tag + \"__\" + morph if use_morphology else tag\n                    tokens.append((id_, word, tag, head, dep, iob))\n                except:  # noqa: E722\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break\n\n\ndef simplify_tags(iob):\n    \"\"\"\n    Simplify tags obtained from the dataset in order to follow Wikipedia\n    scheme (PER, LOC, ORG, MISC). 'PER', 'LOC' and 'ORG' keep their tags, while\n    'GPE_LOC' is simplified to 'LOC', 'GPE_ORG' to 'ORG' and all remaining tags to\n    'MISC'.\n    \"\"\"\n    new_iob = []\n    for tag in iob:\n        tag_match = re.match(\"([A-Z_]+)-([A-Z_]+)\", tag)\n        if tag_match:\n            prefix = tag_match.group(1)\n            suffix = tag_match.group(2)\n            if suffix == \"GPE_LOC\":\n                suffix = \"LOC\"\n            elif suffix == \"GPE_ORG\":\n                suffix = \"ORG\"\n            elif suffix != \"PER\" and suffix != \"LOC\" and suffix != \"ORG\":\n                suffix = \"MISC\"\n            tag = prefix + \"-\" + suffix\n        new_iob.append(tag)\n    return new_iob\n\n\ndef generate_sentence(sent, has_ner_tags):\n    (id_, word, tag, head, dep, iob) = sent\n    sentence = {}\n    tokens = []\n    if has_ner_tags:\n        iob = simplify_tags(iob)\n        biluo = iob_to_biluo(iob)\n    for i, id in enumerate(id_):\n        token = {}\n        token[\"id\"] = id\n        token[\"orth\"] = word[i]\n        token[\"tag\"] = tag[i]\n        token[\"head\"] = head[i] - id\n        token[\"dep\"] = dep[i]\n        if has_ner_tags:\n            token[\"ner\"] = biluo[i]\n        tokens.append(token)\n    sentence[\"tokens\"] = tokens\n    return sentence\n\n\ndef create_doc(sentences, id):\n    doc = {}\n    paragraph = {}\n    doc[\"id\"] = id\n    doc[\"paragraphs\"] = []\n    paragraph[\"sentences\"] = sentences\n    doc[\"paragraphs\"].append(paragraph)\n    return doc\n",
+      "file_patch": "@@ -1,34 +1,27 @@\n # coding: utf8\n from __future__ import unicode_literals\n \n-from .._messages import Messages\n-from ...compat import json_dumps, path2str\n-from ...util import prints\n-from ...gold import iob_to_biluo\n import re\n \n+from ...gold import iob_to_biluo\n \n-def conllu2json(input_path, output_path, n_sents=10, use_morphology=False, lang=None):\n \n+def conllu2json(input_data, n_sents=10, use_morphology=False, lang=None):\n     \"\"\"\n     Convert conllu files into JSON format for use with train cli.\n     use_morphology parameter enables appending morphology to tags, which is\n     useful for languages such as Spanish, where UD tags are not so rich.\n-    \"\"\"\n-    # by @dvsrepo, via #11 explosion/spacy-dev-resources\n \n-    \"\"\"     \n     Extract NER tags if available and convert them so that they follow\n     BILUO and the Wikipedia scheme\n     \"\"\"\n+    # by @dvsrepo, via #11 explosion/spacy-dev-resources\n     # by @katarkor\n-\n     docs = []\n     sentences = []\n-    conll_tuples = read_conllx(input_path, use_morphology=use_morphology)\n+    conll_tuples = read_conllx(input_data, use_morphology=use_morphology)\n     checked_for_ner = False\n     has_ner_tags = False\n-\n     for i, (raw_text, tokens) in enumerate(conll_tuples):\n         sentence, brackets = tokens[0]\n         if not checked_for_ner:\n@@ -37,29 +30,19 @@ def conllu2json(input_path, output_path, n_sents=10, use_morphology=False, lang=\n         sentences.append(generate_sentence(sentence, has_ner_tags))\n         # Real-sized documents could be extracted using the comments on the\n         # conluu document\n-\n-        if(len(sentences) % n_sents == 0):\n+        if len(sentences) % n_sents == 0:\n             doc = create_doc(sentences, i)\n             docs.append(doc)\n             sentences = []\n-\n-    output_filename = input_path.parts[-1].replace(\".conll\", \".json\")\n-    output_filename = input_path.parts[-1].replace(\".conllu\", \".json\")\n-    output_file = output_path / output_filename\n-    with output_file.open('w', encoding='utf-8') as f:\n-        f.write(json_dumps(docs))\n-    prints(Messages.M033.format(n_docs=len(docs)),\n-           title=Messages.M032.format(name=path2str(output_file)))\n+    return docs\n \n \n def is_ner(tag):\n-\n-    \"\"\" \n+    \"\"\"\n     Check the 10th column of the first token to determine if the file contains\n-    NER tags \n+    NER tags\n     \"\"\"\n-\n-    tag_match = re.match('([A-Z_]+)-([A-Z_]+)', tag)\n+    tag_match = re.match(\"([A-Z_]+)-([A-Z_]+)\", tag)\n     if tag_match:\n         return True\n     elif tag == \"O\":\n@@ -67,29 +50,29 @@ def is_ner(tag):\n     else:\n         return False\n \n-def read_conllx(input_path, use_morphology=False, n=0):\n-    text = input_path.open('r', encoding='utf-8').read()\n+\n+def read_conllx(input_data, use_morphology=False, n=0):\n     i = 0\n-    for sent in text.strip().split('\\n\\n'):\n-        lines = sent.strip().split('\\n')\n+    for sent in input_data.strip().split(\"\\n\\n\"):\n+        lines = sent.strip().split(\"\\n\")\n         if lines:\n-            while lines[0].startswith('#'):\n+            while lines[0].startswith(\"#\"):\n                 lines.pop(0)\n             tokens = []\n             for line in lines:\n \n-                parts = line.split('\\t')\n+                parts = line.split(\"\\t\")\n                 id_, word, lemma, pos, tag, morph, head, dep, _1, iob = parts\n-                if '-' in id_ or '.' in id_:\n+                if \"-\" in id_ or \".\" in id_:\n                     continue\n                 try:\n                     id_ = int(id_) - 1\n-                    head = (int(head) - 1) if head != '0' else id_\n-                    dep = 'ROOT' if dep == 'root' else dep\n-                    tag = pos if tag == '_' else tag\n-                    tag = tag+'__'+morph  if use_morphology else tag\n+                    head = (int(head) - 1) if head != \"0\" else id_\n+                    dep = \"ROOT\" if dep == \"root\" else dep\n+                    tag = pos if tag == \"_\" else tag\n+                    tag = tag + \"__\" + morph if use_morphology else tag\n                     tokens.append((id_, word, tag, head, dep, iob))\n-                except:\n+                except:  # noqa: E722\n                     print(line)\n                     raise\n             tuples = [list(t) for t in zip(*tokens)]\n@@ -98,31 +81,31 @@ def read_conllx(input_path, use_morphology=False, n=0):\n             if n >= 1 and i >= n:\n                 break\n \n+\n def simplify_tags(iob):\n-   \n     \"\"\"\n     Simplify tags obtained from the dataset in order to follow Wikipedia\n     scheme (PER, LOC, ORG, MISC). 'PER', 'LOC' and 'ORG' keep their tags, while\n     'GPE_LOC' is simplified to 'LOC', 'GPE_ORG' to 'ORG' and all remaining tags to\n-    'MISC'.     \n+    'MISC'.\n     \"\"\"\n-\n     new_iob = []\n     for tag in iob:\n-        tag_match = re.match('([A-Z_]+)-([A-Z_]+)', tag)\n+        tag_match = re.match(\"([A-Z_]+)-([A-Z_]+)\", tag)\n         if tag_match:\n             prefix = tag_match.group(1)\n             suffix = tag_match.group(2)\n-            if suffix == 'GPE_LOC':\n-                suffix = 'LOC'\n-            elif suffix == 'GPE_ORG':\n-                suffix = 'ORG'\n-            elif suffix != 'PER' and suffix != 'LOC' and suffix != 'ORG':\n-                suffix = 'MISC'\n-            tag = prefix + '-' + suffix\n+            if suffix == \"GPE_LOC\":\n+                suffix = \"LOC\"\n+            elif suffix == \"GPE_ORG\":\n+                suffix = \"ORG\"\n+            elif suffix != \"PER\" and suffix != \"LOC\" and suffix != \"ORG\":\n+                suffix = \"MISC\"\n+            tag = prefix + \"-\" + suffix\n         new_iob.append(tag)\n     return new_iob\n \n+\n def generate_sentence(sent, has_ner_tags):\n     (id_, word, tag, head, dep, iob) = sent\n     sentence = {}\n@@ -144,7 +127,7 @@ def generate_sentence(sent, has_ner_tags):\n     return sentence\n \n \n-def create_doc(sentences,id):\n+def create_doc(sentences, id):\n     doc = {}\n     paragraph = {}\n     doc[\"id\"] = id\n",
+      "files_name_in_blame_commit": [
+        "pretrain.py",
+        "test_json_schemas.py",
+        "validate.py",
+        "_messages.py",
+        "debug_data.py",
+        "__init__.py",
+        "test_gold.py",
+        "ud_run_test.py",
+        "test_misc.py",
+        "setup.py",
+        "test_to_json.py",
+        "gold.pyx",
+        "util.py",
+        "train.py",
+        "conllu2json.py",
+        "jsonl2json.py",
+        "compat.py",
+        "ud_train.py",
+        "__main__.py",
+        "profile.py",
+        "conll_ner2json.py",
+        "conll17_ud_eval.py",
+        "iob2json.py",
+        "test_doc_api.py",
+        "link.py",
+        "download.py",
+        "info.py",
+        "test_phrase_matcher.py",
+        "errors.py",
+        "convert.py",
+        "conllubio2json.py",
+        "doc.pyx",
+        "printers.py",
+        "package.py",
+        "init_model.py",
+        "vocab.py",
+        "evaluate.py"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 19
+  },
+  "recursive_blame_commits": {
+    "recursive_blame_function_lines": {
+      "70": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "def read_conllx(input_path, use_morphology=False, n=0):",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "71": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "    text = input_path.open('r', encoding='utf-8').read()",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "72": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "    i = 0",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "73": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "    for sent in text.strip().split('\\n\\n'):",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "74": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "        lines = sent.strip().split('\\n')",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "75": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "        if lines:",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "76": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "            while lines[0].startswith('#'):",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "77": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "                lines.pop(0)",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "78": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "            tokens = []",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "79": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "            for line in lines:",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "80": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 0
+      },
+      "81": {
+        "commit_id": "55dab77de88d60640bc553297c1206106157110d",
+        "line_code": "                parts = line.split('\\t')",
+        "commit_date": "2017-05-17 13:13:48",
+        "valid": 1
+      },
+      "82": {
+        "commit_id": "e531a827dbb91b6d84db8745fe7d7d424ac6fcb2",
+        "line_code": "                id_, word, lemma, pos, tag, morph, head, dep, _1, iob = parts",
+        "commit_date": "2018-07-25 22:21:31",
+        "valid": 1
+      },
+      "83": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "                if '-' in id_ or '.' in id_:",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "84": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "                    continue",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "85": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "                try:",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "86": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "                    id_ = int(id_) - 1",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "87": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "                    head = (int(head) - 1) if head != '0' else id_",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "88": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "                    dep = 'ROOT' if dep == 'root' else dep",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "89": {
+        "commit_id": "e237472cdcc32276d042ce56ed0ce3cef560b37e",
+        "line_code": "                    tag = pos if tag == '_' else tag",
+        "commit_date": "2017-11-01 21:25:33",
+        "valid": 1
+      },
+      "90": {
+        "commit_id": "3bf4a28d8de979b12865cb2746780b4c48bd15aa",
+        "line_code": "                    tag = tag+'__'+morph  if use_morphology else tag",
+        "commit_date": "2017-05-17 12:04:33",
+        "valid": 1
+      },
+      "91": {
+        "commit_id": "e531a827dbb91b6d84db8745fe7d7d424ac6fcb2",
+        "line_code": "                    tokens.append((id_, word, tag, head, dep, iob))",
+        "commit_date": "2018-07-25 22:21:31",
+        "valid": 1
+      },
+      "92": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "                except:",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "93": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "                    print(line)",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "94": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "                    raise",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "95": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "            tuples = [list(t) for t in zip(*tokens)]",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "96": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "            yield (None, [[tuples, []]])",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "97": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "            i += 1",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "98": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "            if n >= 1 and i >= n:",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      },
+      "99": {
+        "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+        "line_code": "                break",
+        "commit_date": "2017-04-07 13:05:12",
+        "valid": 1
+      }
+    },
+    "commits": {
+      "e531a827dbb91b6d84db8745fe7d7d424ac6fcb2": {
+        "commit": {
+          "commit_id": "e531a827dbb91b6d84db8745fe7d7d424ac6fcb2",
+          "commit_message": "Changed conllu2json to be able to extract NER tags (#2594)\n\n* extract ner tags from conllu file if available\r\n\r\n* fixed a bug in regex",
+          "commit_author": "Kaisa (Katarzyna) Korsak",
+          "commit_date": "2018-07-25 22:21:31",
+          "commit_parent": "07d0cc9de7b27b20fa3908ce30cc65ea06a8b443"
+        },
+        "function": {
+          "function_name": "read_conllx",
+          "function_code_before": "def read_conllx(input_path, use_morphology=False, n=0):\n    text = input_path.open('r', encoding='utf-8').read()\n    i = 0\n    for sent in text.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n                parts = line.split('\\t')\n                (id_, word, lemma, pos, tag, morph, head, dep, _1, _2) = parts\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = int(head) - 1 if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = pos if tag == '_' else tag\n                    tag = tag + '__' + morph if use_morphology else tag\n                    tokens.append((id_, word, tag, head, dep, 'O'))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break",
+          "function_code_after": "def read_conllx(input_path, use_morphology=False, n=0):\n    text = input_path.open('r', encoding='utf-8').read()\n    i = 0\n    for sent in text.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n                parts = line.split('\\t')\n                (id_, word, lemma, pos, tag, morph, head, dep, _1, iob) = parts\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = int(head) - 1 if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = pos if tag == '_' else tag\n                    tag = tag + '__' + morph if use_morphology else tag\n                    tokens.append((id_, word, tag, head, dep, iob))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break",
+          "function_before_start_line": 40,
+          "function_before_end_line": 69,
+          "function_after_start_line": 70,
+          "function_after_end_line": 99,
+          "function_before_token_count": 248,
+          "function_after_token_count": 248,
+          "functions_name_modified_file": [
+            "generate_sentence",
+            "read_conllx",
+            "simplify_tags",
+            "is_ner",
+            "create_doc",
+            "conllu2json"
+          ],
+          "functions_name_all_files": [
+            "generate_sentence",
+            "read_conllx",
+            "simplify_tags",
+            "is_ner",
+            "create_doc",
+            "conllu2json"
+          ],
+          "functions_name_co_evolved_modified_file": [
+            "generate_sentence",
+            "conllu2json",
+            "is_ner",
+            "simplify_tags"
+          ],
+          "functions_name_co_evolved_all_files": [
+            "generate_sentence",
+            "conllu2json",
+            "is_ner",
+            "simplify_tags"
+          ]
+        },
+        "file": {
+          "file_name": "conllu2json.py",
+          "file_nloc": 113,
+          "file_complexity": 35,
+          "file_token_count": 795,
+          "file_before": "# coding: utf8\nfrom __future__ import unicode_literals\n\nfrom .._messages import Messages\nfrom ...compat import json_dumps, path2str\nfrom ...util import prints\n\n\ndef conllu2json(input_path, output_path, n_sents=10, use_morphology=False):\n    \"\"\"\n    Convert conllu files into JSON format for use with train cli.\n    use_morphology parameter enables appending morphology to tags, which is\n    useful for languages such as Spanish, where UD tags are not so rich.\n    \"\"\"\n    # by @dvsrepo, via #11 explosion/spacy-dev-resources\n\n    docs = []\n    sentences = []\n    conll_tuples = read_conllx(input_path, use_morphology=use_morphology)\n\n    for i, (raw_text, tokens) in enumerate(conll_tuples):\n        sentence, brackets = tokens[0]\n        sentences.append(generate_sentence(sentence))\n        # Real-sized documents could be extracted using the comments on the\n        # conluu document\n        if(len(sentences) % n_sents == 0):\n            doc = create_doc(sentences, i)\n            docs.append(doc)\n            sentences = []\n\n    output_filename = input_path.parts[-1].replace(\".conll\", \".json\")\n    output_filename = input_path.parts[-1].replace(\".conllu\", \".json\")\n    output_file = output_path / output_filename\n    with output_file.open('w', encoding='utf-8') as f:\n        f.write(json_dumps(docs))\n    prints(Messages.M033.format(n_docs=len(docs)),\n           title=Messages.M032.format(name=path2str(output_file)))\n\n\ndef read_conllx(input_path, use_morphology=False, n=0):\n    text = input_path.open('r', encoding='utf-8').read()\n    i = 0\n    for sent in text.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n\n                parts = line.split('\\t')\n                id_, word, lemma, pos, tag, morph, head, dep, _1, _2 = parts\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = (int(head) - 1) if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = pos if tag == '_' else tag\n                    tag = tag+'__'+morph  if use_morphology else tag\n                    tokens.append((id_, word, tag, head, dep, 'O'))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break\n\n\ndef generate_sentence(sent):\n    (id_, word, tag, head, dep, _) = sent\n    sentence = {}\n    tokens = []\n    for i, id in enumerate(id_):\n        token = {}\n        token[\"orth\"] = word[i]\n        token[\"tag\"] = tag[i]\n        token[\"head\"] = head[i] - id\n        token[\"dep\"] = dep[i]\n        tokens.append(token)\n    sentence[\"tokens\"] = tokens\n    return sentence\n\n\ndef create_doc(sentences,id):\n    doc = {}\n    paragraph = {}\n    doc[\"id\"] = id\n    doc[\"paragraphs\"] = []\n    paragraph[\"sentences\"] = sentences\n    doc[\"paragraphs\"].append(paragraph)\n    return doc\n",
+          "file_after": "# coding: utf8\nfrom __future__ import unicode_literals\n\nfrom .._messages import Messages\nfrom ...compat import json_dumps, path2str\nfrom ...util import prints\nfrom ...gold import iob_to_biluo\nimport re\n\n\ndef conllu2json(input_path, output_path, n_sents=10, use_morphology=False):\n\n    \"\"\"\n    Convert conllu files into JSON format for use with train cli.\n    use_morphology parameter enables appending morphology to tags, which is\n    useful for languages such as Spanish, where UD tags are not so rich.\n    \"\"\"\n    # by @dvsrepo, via #11 explosion/spacy-dev-resources\n\n    \"\"\"     \n    Extract NER tags if available and convert them so that they follow\n    BILUO and the Wikipedia scheme\n    \"\"\"\n    # by @katarkor\n\n    docs = []\n    sentences = []\n    conll_tuples = read_conllx(input_path, use_morphology=use_morphology)\n    checked_for_ner = False\n    has_ner_tags = False\n\n    for i, (raw_text, tokens) in enumerate(conll_tuples):\n        sentence, brackets = tokens[0]\n        if not checked_for_ner:\n            has_ner_tags = is_ner(sentence[5][0])\n            checked_for_ner = True\n        sentences.append(generate_sentence(sentence, has_ner_tags))\n        # Real-sized documents could be extracted using the comments on the\n        # conluu document\n\n        if(len(sentences) % n_sents == 0):\n            doc = create_doc(sentences, i)\n            docs.append(doc)\n            sentences = []\n\n    output_filename = input_path.parts[-1].replace(\".conll\", \".json\")\n    output_filename = input_path.parts[-1].replace(\".conllu\", \".json\")\n    output_file = output_path / output_filename\n    with output_file.open('w', encoding='utf-8') as f:\n        f.write(json_dumps(docs))\n    prints(Messages.M033.format(n_docs=len(docs)),\n           title=Messages.M032.format(name=path2str(output_file)))\n\n\ndef is_ner(tag):\n\n    \"\"\" \n    Check the 10th column of the first token to determine if the file contains\n    NER tags \n    \"\"\"\n\n    tag_match = re.match('([A-Z_]+)-([A-Z_]+)', tag)\n    if tag_match:\n        return True\n    elif tag == \"O\":\n        return True\n    else:\n        return False\n\ndef read_conllx(input_path, use_morphology=False, n=0):\n    text = input_path.open('r', encoding='utf-8').read()\n    i = 0\n    for sent in text.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n\n                parts = line.split('\\t')\n                id_, word, lemma, pos, tag, morph, head, dep, _1, iob = parts\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = (int(head) - 1) if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = pos if tag == '_' else tag\n                    tag = tag+'__'+morph  if use_morphology else tag\n                    tokens.append((id_, word, tag, head, dep, iob))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break\n\ndef simplify_tags(iob):\n   \n    \"\"\"\n    Simplify tags obtained from the dataset in order to follow Wikipedia\n    scheme (PER, LOC, ORG, MISC). 'PER', 'LOC' and 'ORG' keep their tags, while\n    'GPE_LOC' is simplified to 'LOC', 'GPE_ORG' to 'ORG' and all remaining tags to\n    'MISC'.     \n    \"\"\"\n\n    new_iob = []\n    for tag in iob:\n        tag_match = re.match('([A-Z_]+)-([A-Z_]+)', tag)\n        if tag_match:\n            prefix = tag_match.group(1)\n            suffix = tag_match.group(2)\n            if suffix == 'GPE_LOC':\n                suffix = 'LOC'\n            elif suffix == 'GPE_ORG':\n                suffix = 'ORG'\n            elif suffix != 'PER' and suffix != 'LOC' and suffix != 'ORG':\n                suffix = 'MISC'\n            tag = prefix + '-' + suffix\n        new_iob.append(tag)\n    return new_iob\n\ndef generate_sentence(sent, has_ner_tags):\n    (id_, word, tag, head, dep, iob) = sent\n    sentence = {}\n    tokens = []\n    if has_ner_tags:\n        iob = simplify_tags(iob)\n        biluo = iob_to_biluo(iob)\n    for i, id in enumerate(id_):\n        token = {}\n        token[\"id\"] = id\n        token[\"orth\"] = word[i]\n        token[\"tag\"] = tag[i]\n        token[\"head\"] = head[i] - id\n        token[\"dep\"] = dep[i]\n        if has_ner_tags:\n            token[\"ner\"] = biluo[i]\n        tokens.append(token)\n    sentence[\"tokens\"] = tokens\n    return sentence\n\n\ndef create_doc(sentences,id):\n    doc = {}\n    paragraph = {}\n    doc[\"id\"] = id\n    doc[\"paragraphs\"] = []\n    paragraph[\"sentences\"] = sentences\n    doc[\"paragraphs\"].append(paragraph)\n    return doc\n",
+          "file_patch": "@@ -4,9 +4,12 @@ from __future__ import unicode_literals\n from .._messages import Messages\n from ...compat import json_dumps, path2str\n from ...util import prints\n+from ...gold import iob_to_biluo\n+import re\n \n \n def conllu2json(input_path, output_path, n_sents=10, use_morphology=False):\n+\n     \"\"\"\n     Convert conllu files into JSON format for use with train cli.\n     use_morphology parameter enables appending morphology to tags, which is\n@@ -14,15 +17,27 @@ def conllu2json(input_path, output_path, n_sents=10, use_morphology=False):\n     \"\"\"\n     # by @dvsrepo, via #11 explosion/spacy-dev-resources\n \n+    \"\"\"     \n+    Extract NER tags if available and convert them so that they follow\n+    BILUO and the Wikipedia scheme\n+    \"\"\"\n+    # by @katarkor\n+\n     docs = []\n     sentences = []\n     conll_tuples = read_conllx(input_path, use_morphology=use_morphology)\n+    checked_for_ner = False\n+    has_ner_tags = False\n \n     for i, (raw_text, tokens) in enumerate(conll_tuples):\n         sentence, brackets = tokens[0]\n-        sentences.append(generate_sentence(sentence))\n+        if not checked_for_ner:\n+            has_ner_tags = is_ner(sentence[5][0])\n+            checked_for_ner = True\n+        sentences.append(generate_sentence(sentence, has_ner_tags))\n         # Real-sized documents could be extracted using the comments on the\n         # conluu document\n+\n         if(len(sentences) % n_sents == 0):\n             doc = create_doc(sentences, i)\n             docs.append(doc)\n@@ -37,6 +52,21 @@ def conllu2json(input_path, output_path, n_sents=10, use_morphology=False):\n            title=Messages.M032.format(name=path2str(output_file)))\n \n \n+def is_ner(tag):\n+\n+    \"\"\" \n+    Check the 10th column of the first token to determine if the file contains\n+    NER tags \n+    \"\"\"\n+\n+    tag_match = re.match('([A-Z_]+)-([A-Z_]+)', tag)\n+    if tag_match:\n+        return True\n+    elif tag == \"O\":\n+        return True\n+    else:\n+        return False\n+\n def read_conllx(input_path, use_morphology=False, n=0):\n     text = input_path.open('r', encoding='utf-8').read()\n     i = 0\n@@ -49,7 +79,7 @@ def read_conllx(input_path, use_morphology=False, n=0):\n             for line in lines:\n \n                 parts = line.split('\\t')\n-                id_, word, lemma, pos, tag, morph, head, dep, _1, _2 = parts\n+                id_, word, lemma, pos, tag, morph, head, dep, _1, iob = parts\n                 if '-' in id_ or '.' in id_:\n                     continue\n                 try:\n@@ -58,7 +88,7 @@ def read_conllx(input_path, use_morphology=False, n=0):\n                     dep = 'ROOT' if dep == 'root' else dep\n                     tag = pos if tag == '_' else tag\n                     tag = tag+'__'+morph  if use_morphology else tag\n-                    tokens.append((id_, word, tag, head, dep, 'O'))\n+                    tokens.append((id_, word, tag, head, dep, iob))\n                 except:\n                     print(line)\n                     raise\n@@ -68,17 +98,47 @@ def read_conllx(input_path, use_morphology=False, n=0):\n             if n >= 1 and i >= n:\n                 break\n \n+def simplify_tags(iob):\n+   \n+    \"\"\"\n+    Simplify tags obtained from the dataset in order to follow Wikipedia\n+    scheme (PER, LOC, ORG, MISC). 'PER', 'LOC' and 'ORG' keep their tags, while\n+    'GPE_LOC' is simplified to 'LOC', 'GPE_ORG' to 'ORG' and all remaining tags to\n+    'MISC'.     \n+    \"\"\"\n+\n+    new_iob = []\n+    for tag in iob:\n+        tag_match = re.match('([A-Z_]+)-([A-Z_]+)', tag)\n+        if tag_match:\n+            prefix = tag_match.group(1)\n+            suffix = tag_match.group(2)\n+            if suffix == 'GPE_LOC':\n+                suffix = 'LOC'\n+            elif suffix == 'GPE_ORG':\n+                suffix = 'ORG'\n+            elif suffix != 'PER' and suffix != 'LOC' and suffix != 'ORG':\n+                suffix = 'MISC'\n+            tag = prefix + '-' + suffix\n+        new_iob.append(tag)\n+    return new_iob\n \n-def generate_sentence(sent):\n-    (id_, word, tag, head, dep, _) = sent\n+def generate_sentence(sent, has_ner_tags):\n+    (id_, word, tag, head, dep, iob) = sent\n     sentence = {}\n     tokens = []\n+    if has_ner_tags:\n+        iob = simplify_tags(iob)\n+        biluo = iob_to_biluo(iob)\n     for i, id in enumerate(id_):\n         token = {}\n+        token[\"id\"] = id\n         token[\"orth\"] = word[i]\n         token[\"tag\"] = tag[i]\n         token[\"head\"] = head[i] - id\n         token[\"dep\"] = dep[i]\n+        if has_ner_tags:\n+            token[\"ner\"] = biluo[i]\n         tokens.append(token)\n     sentence[\"tokens\"] = tokens\n     return sentence\n",
+          "files_name_in_blame_commit": [
+            "conllu2json.py"
+          ]
+        }
+      },
+      "e237472cdcc32276d042ce56ed0ce3cef560b37e": {
+        "commit": {
+          "commit_id": "e237472cdcc32276d042ce56ed0ce3cef560b37e",
+          "commit_message": "Fix tag and filename conversion for conllu",
+          "commit_author": "Matthew Honnibal",
+          "commit_date": "2017-11-01 21:25:33",
+          "commit_parent": "e5eb5e5bf6866d49914b37034fac01d2c11b0f52"
+        },
+        "function": {
+          "function_name": "read_conllx",
+          "function_code_before": "def read_conllx(input_path, use_morphology=False, n=0):\n    text = input_path.open('r', encoding='utf-8').read()\n    i = 0\n    for sent in text.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n                parts = line.split('\\t')\n                (id_, word, lemma, pos, tag, morph, head, dep, _1, _2) = parts\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = int(head) - 1 if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = tag + '__' + morph if use_morphology else tag\n                    tokens.append((id_, word, tag, head, dep, 'O'))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break",
+          "function_code_after": "def read_conllx(input_path, use_morphology=False, n=0):\n    text = input_path.open('r', encoding='utf-8').read()\n    i = 0\n    for sent in text.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n                parts = line.split('\\t')\n                (id_, word, lemma, pos, tag, morph, head, dep, _1, _2) = parts\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = int(head) - 1 if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = pos if tag == '_' else tag\n                    tag = tag + '__' + morph if use_morphology else tag\n                    tokens.append((id_, word, tag, head, dep, 'O'))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break",
+          "function_before_start_line": 39,
+          "function_before_end_line": 67,
+          "function_after_start_line": 39,
+          "function_after_end_line": 68,
+          "function_before_token_count": 239,
+          "function_after_token_count": 248,
+          "functions_name_modified_file": [
+            "create_doc",
+            "read_conllx",
+            "conllu2json",
+            "generate_sentence"
+          ],
+          "functions_name_all_files": [
+            "create_doc",
+            "read_conllx",
+            "conllu2json",
+            "generate_sentence"
+          ],
+          "functions_name_co_evolved_modified_file": [
+            "conllu2json"
+          ],
+          "functions_name_co_evolved_all_files": [
+            "conllu2json"
+          ]
+        },
+        "file": {
+          "file_name": "conllu2json.py",
+          "file_nloc": 71,
+          "file_complexity": 21,
+          "file_token_count": 580,
+          "file_before": "# coding: utf8\nfrom __future__ import unicode_literals\n\nfrom ...compat import json_dumps, path2str\nfrom ...util import prints\n\n\ndef conllu2json(input_path, output_path, n_sents=10, use_morphology=False):\n    \"\"\"\n    Convert conllu files into JSON format for use with train cli.\n    use_morphology parameter enables appending morphology to tags, which is\n    useful for languages such as Spanish, where UD tags are not so rich.\n    \"\"\"\n    # by @dvsrepo, via #11 explosion/spacy-dev-resources\n\n    docs = []\n    sentences = []\n    conll_tuples = read_conllx(input_path, use_morphology=use_morphology)\n\n    for i, (raw_text, tokens) in enumerate(conll_tuples):\n        sentence, brackets = tokens[0]\n        sentences.append(generate_sentence(sentence))\n        # Real-sized documents could be extracted using the comments on the\n        # conluu document\n        if(len(sentences) % n_sents == 0):\n            doc = create_doc(sentences, i)\n            docs.append(doc)\n            sentences = []\n\n    output_filename = input_path.parts[-1].replace(\".conllu\", \".json\")\n    output_filename = input_path.parts[-1].replace(\".conll\", \".json\")\n    output_file = output_path / output_filename\n    with output_file.open('w', encoding='utf-8') as f:\n        f.write(json_dumps(docs))\n    prints(\"Created %d documents\" % len(docs),\n           title=\"Generated output file %s\" % path2str(output_file))\n\n\ndef read_conllx(input_path, use_morphology=False, n=0):\n    text = input_path.open('r', encoding='utf-8').read()\n    i = 0\n    for sent in text.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n\n                parts = line.split('\\t')\n                id_, word, lemma, pos, tag, morph, head, dep, _1, _2 = parts\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = (int(head) - 1) if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = tag+'__'+morph  if use_morphology else tag\n                    tokens.append((id_, word, tag, head, dep, 'O'))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break\n\n\ndef generate_sentence(sent):\n    (id_, word, tag, head, dep, _) = sent\n    sentence = {}\n    tokens = []\n    for i, id in enumerate(id_):\n        token = {}\n        token[\"orth\"] = word[i]\n        token[\"tag\"] = tag[i]\n        token[\"head\"] = head[i] - id\n        token[\"dep\"] = dep[i]\n        tokens.append(token)\n    sentence[\"tokens\"] = tokens\n    return sentence\n\n\ndef create_doc(sentences,id):\n    doc = {}\n    paragraph = {}\n    doc[\"id\"] = id\n    doc[\"paragraphs\"] = []\n    paragraph[\"sentences\"] = sentences\n    doc[\"paragraphs\"].append(paragraph)\n    return doc\n",
+          "file_after": "# coding: utf8\nfrom __future__ import unicode_literals\n\nfrom ...compat import json_dumps, path2str\nfrom ...util import prints\n\n\ndef conllu2json(input_path, output_path, n_sents=10, use_morphology=False):\n    \"\"\"\n    Convert conllu files into JSON format for use with train cli.\n    use_morphology parameter enables appending morphology to tags, which is\n    useful for languages such as Spanish, where UD tags are not so rich.\n    \"\"\"\n    # by @dvsrepo, via #11 explosion/spacy-dev-resources\n\n    docs = []\n    sentences = []\n    conll_tuples = read_conllx(input_path, use_morphology=use_morphology)\n\n    for i, (raw_text, tokens) in enumerate(conll_tuples):\n        sentence, brackets = tokens[0]\n        sentences.append(generate_sentence(sentence))\n        # Real-sized documents could be extracted using the comments on the\n        # conluu document\n        if(len(sentences) % n_sents == 0):\n            doc = create_doc(sentences, i)\n            docs.append(doc)\n            sentences = []\n\n    output_filename = input_path.parts[-1].replace(\".conllu\", \".json\")\n    output_filename = output_filename.parts[-1].replace(\".conll\", \".json\")\n    output_file = output_path / output_filename\n    with output_file.open('w', encoding='utf-8') as f:\n        f.write(json_dumps(docs))\n    prints(\"Created %d documents\" % len(docs),\n           title=\"Generated output file %s\" % path2str(output_file))\n\n\ndef read_conllx(input_path, use_morphology=False, n=0):\n    text = input_path.open('r', encoding='utf-8').read()\n    i = 0\n    for sent in text.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n\n                parts = line.split('\\t')\n                id_, word, lemma, pos, tag, morph, head, dep, _1, _2 = parts\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = (int(head) - 1) if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = pos if tag == '_' else tag\n                    tag = tag+'__'+morph  if use_morphology else tag\n                    tokens.append((id_, word, tag, head, dep, 'O'))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break\n\n\ndef generate_sentence(sent):\n    (id_, word, tag, head, dep, _) = sent\n    sentence = {}\n    tokens = []\n    for i, id in enumerate(id_):\n        token = {}\n        token[\"orth\"] = word[i]\n        token[\"tag\"] = tag[i]\n        token[\"head\"] = head[i] - id\n        token[\"dep\"] = dep[i]\n        tokens.append(token)\n    sentence[\"tokens\"] = tokens\n    return sentence\n\n\ndef create_doc(sentences,id):\n    doc = {}\n    paragraph = {}\n    doc[\"id\"] = id\n    doc[\"paragraphs\"] = []\n    paragraph[\"sentences\"] = sentences\n    doc[\"paragraphs\"].append(paragraph)\n    return doc\n",
+          "file_patch": "@@ -28,7 +28,7 @@ def conllu2json(input_path, output_path, n_sents=10, use_morphology=False):\n             sentences = []\n \n     output_filename = input_path.parts[-1].replace(\".conllu\", \".json\")\n-    output_filename = input_path.parts[-1].replace(\".conll\", \".json\")\n+    output_filename = output_filename.parts[-1].replace(\".conll\", \".json\")\n     output_file = output_path / output_filename\n     with output_file.open('w', encoding='utf-8') as f:\n         f.write(json_dumps(docs))\n@@ -55,6 +55,7 @@ def read_conllx(input_path, use_morphology=False, n=0):\n                     id_ = int(id_) - 1\n                     head = (int(head) - 1) if head != '0' else id_\n                     dep = 'ROOT' if dep == 'root' else dep\n+                    tag = pos if tag == '_' else tag\n                     tag = tag+'__'+morph  if use_morphology else tag\n                     tokens.append((id_, word, tag, head, dep, 'O'))\n                 except:\n",
+          "files_name_in_blame_commit": [
+            "conllu2json.py"
+          ]
+        }
+      },
+      "55dab77de88d60640bc553297c1206106157110d": {
+        "commit": {
+          "commit_id": "55dab77de88d60640bc553297c1206106157110d",
+          "commit_message": "Add conversion rule for .conll",
+          "commit_author": "Matthew Honnibal",
+          "commit_date": "2017-05-17 13:13:48",
+          "commit_parent": "692bd2a1867af6fbad505fb1b883b943b5020e4a"
+        },
+        "function": {
+          "function_name": "read_conllx",
+          "function_code_before": "def read_conllx(input_path, use_morphology=False, n=0):\n    text = input_path.open('r', encoding='utf-8').read()\n    i = 0\n    for sent in text.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n                (id_, word, lemma, pos, tag, morph, head, dep, _1, _2) = line.split('\\t')\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = int(head) - 1 if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = tag + '__' + morph if use_morphology else tag\n                    tokens.append((id_, word, tag, head, dep, 'O'))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break",
+          "function_code_after": "def read_conllx(input_path, use_morphology=False, n=0):\n    text = input_path.open('r', encoding='utf-8').read()\n    i = 0\n    for sent in text.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n                parts = line.split('\\t')\n                (id_, word, lemma, pos, tag, morph, head, dep, _1, _2) = parts\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = int(head) - 1 if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = tag + '__' + morph if use_morphology else tag\n                    tokens.append((id_, word, tag, head, dep, 'O'))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break",
+          "function_before_start_line": 38,
+          "function_before_end_line": 66,
+          "function_after_start_line": 39,
+          "function_after_end_line": 67,
+          "function_before_token_count": 237,
+          "function_after_token_count": 239,
+          "functions_name_modified_file": [
+            "create_doc",
+            "read_conllx",
+            "conllu2json",
+            "generate_sentence"
+          ],
+          "functions_name_all_files": [
+            "convert",
+            "generate_sentence",
+            "read_conllx",
+            "create_doc",
+            "conllu2json"
+          ],
+          "functions_name_co_evolved_modified_file": [
+            "conllu2json"
+          ],
+          "functions_name_co_evolved_all_files": [
+            "conllu2json"
+          ]
+        },
+        "file": {
+          "file_name": "conllu2json.py",
+          "file_nloc": 70,
+          "file_complexity": 20,
+          "file_token_count": 571,
+          "file_before": "# coding: utf8\nfrom __future__ import unicode_literals\n\nfrom ...compat import json_dumps, path2str\nfrom ...util import prints\n\n\ndef conllu2json(input_path, output_path, n_sents=10, use_morphology=False):\n    \"\"\"\n    Convert conllu files into JSON format for use with train cli.\n    use_morphology parameter enables appending morphology to tags, which is\n    useful for languages such as Spanish, where UD tags are not so rich.\n    \"\"\"\n    # by @dvsrepo, via #11 explosion/spacy-dev-resources\n\n    docs = []\n    sentences = []\n    conll_tuples = read_conllx(input_path, use_morphology=use_morphology)\n\n    for i, (raw_text, tokens) in enumerate(conll_tuples):\n        sentence, brackets = tokens[0]\n        sentences.append(generate_sentence(sentence))\n        # Real-sized documents could be extracted using the comments on the\n        # conluu document\n        if(len(sentences) % n_sents == 0):\n            doc = create_doc(sentences, i)\n            docs.append(doc)\n            sentences = []\n\n    output_filename = input_path.parts[-1].replace(\".conllu\", \".json\")\n    output_file = output_path / output_filename\n    with output_file.open('w', encoding='utf-8') as f:\n        f.write(json_dumps(docs))\n    prints(\"Created %d documents\" % len(docs),\n           title=\"Generated output file %s\" % path2str(output_file))\n\n\ndef read_conllx(input_path, use_morphology=False, n=0):\n    text = input_path.open('r', encoding='utf-8').read()\n    i = 0\n    for sent in text.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n\n                id_, word, lemma, pos, tag, morph, head, dep, _1, \\\n                _2 = line.split('\\t')\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = (int(head) - 1) if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = tag+'__'+morph  if use_morphology else tag\n                    tokens.append((id_, word, tag, head, dep, 'O'))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break\n\n\ndef generate_sentence(sent):\n    (id_, word, tag, head, dep, _) = sent\n    sentence = {}\n    tokens = []\n    for i, id in enumerate(id_):\n        token = {}\n        token[\"orth\"] = word[id]\n        token[\"tag\"] = tag[id]\n        token[\"head\"] = head[id] - i\n        token[\"dep\"] = dep[id]\n        tokens.append(token)\n    sentence[\"tokens\"] = tokens\n    return sentence\n\n\ndef create_doc(sentences,id):\n    doc = {}\n    paragraph = {}\n    doc[\"id\"] = id\n    doc[\"paragraphs\"] = []\n    paragraph[\"sentences\"] = sentences\n    doc[\"paragraphs\"].append(paragraph)\n    return doc\n",
+          "file_after": "# coding: utf8\nfrom __future__ import unicode_literals\n\nfrom ...compat import json_dumps, path2str\nfrom ...util import prints\n\n\ndef conllu2json(input_path, output_path, n_sents=10, use_morphology=False):\n    \"\"\"\n    Convert conllu files into JSON format for use with train cli.\n    use_morphology parameter enables appending morphology to tags, which is\n    useful for languages such as Spanish, where UD tags are not so rich.\n    \"\"\"\n    # by @dvsrepo, via #11 explosion/spacy-dev-resources\n\n    docs = []\n    sentences = []\n    conll_tuples = read_conllx(input_path, use_morphology=use_morphology)\n\n    for i, (raw_text, tokens) in enumerate(conll_tuples):\n        sentence, brackets = tokens[0]\n        sentences.append(generate_sentence(sentence))\n        # Real-sized documents could be extracted using the comments on the\n        # conluu document\n        if(len(sentences) % n_sents == 0):\n            doc = create_doc(sentences, i)\n            docs.append(doc)\n            sentences = []\n\n    output_filename = input_path.parts[-1].replace(\".conllu\", \".json\")\n    output_filename = input_path.parts[-1].replace(\".conll\", \".json\")\n    output_file = output_path / output_filename\n    with output_file.open('w', encoding='utf-8') as f:\n        f.write(json_dumps(docs))\n    prints(\"Created %d documents\" % len(docs),\n           title=\"Generated output file %s\" % path2str(output_file))\n\n\ndef read_conllx(input_path, use_morphology=False, n=0):\n    text = input_path.open('r', encoding='utf-8').read()\n    i = 0\n    for sent in text.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n\n                parts = line.split('\\t')\n                id_, word, lemma, pos, tag, morph, head, dep, _1, _2 = parts\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = (int(head) - 1) if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = tag+'__'+morph  if use_morphology else tag\n                    tokens.append((id_, word, tag, head, dep, 'O'))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break\n\n\ndef generate_sentence(sent):\n    (id_, word, tag, head, dep, _) = sent\n    sentence = {}\n    tokens = []\n    for i, id in enumerate(id_):\n        token = {}\n        token[\"orth\"] = word[id]\n        token[\"tag\"] = tag[id]\n        token[\"head\"] = head[id] - i\n        token[\"dep\"] = dep[id]\n        tokens.append(token)\n    sentence[\"tokens\"] = tokens\n    return sentence\n\n\ndef create_doc(sentences,id):\n    doc = {}\n    paragraph = {}\n    doc[\"id\"] = id\n    doc[\"paragraphs\"] = []\n    paragraph[\"sentences\"] = sentences\n    doc[\"paragraphs\"].append(paragraph)\n    return doc\n",
+          "file_patch": "@@ -28,6 +28,7 @@ def conllu2json(input_path, output_path, n_sents=10, use_morphology=False):\n             sentences = []\n \n     output_filename = input_path.parts[-1].replace(\".conllu\", \".json\")\n+    output_filename = input_path.parts[-1].replace(\".conll\", \".json\")\n     output_file = output_path / output_filename\n     with output_file.open('w', encoding='utf-8') as f:\n         f.write(json_dumps(docs))\n@@ -46,8 +47,8 @@ def read_conllx(input_path, use_morphology=False, n=0):\n             tokens = []\n             for line in lines:\n \n-                id_, word, lemma, pos, tag, morph, head, dep, _1, \\\n-                _2 = line.split('\\t')\n+                parts = line.split('\\t')\n+                id_, word, lemma, pos, tag, morph, head, dep, _1, _2 = parts\n                 if '-' in id_ or '.' in id_:\n                     continue\n                 try:\n",
+          "files_name_in_blame_commit": [
+            "convert.py",
+            "conllu2json.py"
+          ]
+        }
+      },
+      "3bf4a28d8de979b12865cb2746780b4c48bd15aa": {
+        "commit": {
+          "commit_id": "3bf4a28d8de979b12865cb2746780b4c48bd15aa",
+          "commit_message": "Use tag in CoNLL converter, not POS",
+          "commit_author": "Matthew Honnibal",
+          "commit_date": "2017-05-17 12:04:33",
+          "commit_parent": "c9a5d5d24b5ec2b2c65cc426b351f694f112126c"
+        },
+        "function": {
+          "function_name": "read_conllx",
+          "function_code_before": "def read_conllx(input_path, use_morphology=False, n=0):\n    text = input_path.open('r', encoding='utf-8').read()\n    i = 0\n    for sent in text.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n                (id_, word, lemma, pos, tag, morph, head, dep, _1, _2) = line.split('\\t')\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = int(head) - 1 if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = pos + '__' + morph if use_morphology else pos\n                    tokens.append((id_, word, tag, head, dep, 'O'))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break",
+          "function_code_after": "def read_conllx(input_path, use_morphology=False, n=0):\n    text = input_path.open('r', encoding='utf-8').read()\n    i = 0\n    for sent in text.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n                (id_, word, lemma, pos, tag, morph, head, dep, _1, _2) = line.split('\\t')\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = int(head) - 1 if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = tag + '__' + morph if use_morphology else tag\n                    tokens.append((id_, word, tag, head, dep, 'O'))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break",
+          "function_before_start_line": 38,
+          "function_before_end_line": 66,
+          "function_after_start_line": 38,
+          "function_after_end_line": 66,
+          "function_before_token_count": 237,
+          "function_after_token_count": 237,
+          "functions_name_modified_file": [
+            "create_doc",
+            "read_conllx",
+            "conllu2json",
+            "generate_sentence"
+          ],
+          "functions_name_all_files": [
+            "create_doc",
+            "read_conllx",
+            "conllu2json",
+            "generate_sentence"
+          ],
+          "functions_name_co_evolved_modified_file": [],
+          "functions_name_co_evolved_all_files": []
+        },
+        "file": {
+          "file_name": "conllu2json.py",
+          "file_nloc": 69,
+          "file_complexity": 20,
+          "file_token_count": 553,
+          "file_before": "# coding: utf8\nfrom __future__ import unicode_literals\n\nfrom ...compat import json_dumps, path2str\nfrom ...util import prints\n\n\ndef conllu2json(input_path, output_path, n_sents=10, use_morphology=False):\n    \"\"\"\n    Convert conllu files into JSON format for use with train cli.\n    use_morphology parameter enables appending morphology to tags, which is\n    useful for languages such as Spanish, where UD tags are not so rich.\n    \"\"\"\n    # by @dvsrepo, via #11 explosion/spacy-dev-resources\n\n    docs = []\n    sentences = []\n    conll_tuples = read_conllx(input_path, use_morphology=use_morphology)\n\n    for i, (raw_text, tokens) in enumerate(conll_tuples):\n        sentence, brackets = tokens[0]\n        sentences.append(generate_sentence(sentence))\n        # Real-sized documents could be extracted using the comments on the\n        # conluu document\n        if(len(sentences) % n_sents == 0):\n            doc = create_doc(sentences, i)\n            docs.append(doc)\n            sentences = []\n\n    output_filename = input_path.parts[-1].replace(\".conllu\", \".json\")\n    output_file = output_path / output_filename\n    with output_file.open('w', encoding='utf-8') as f:\n        f.write(json_dumps(docs))\n    prints(\"Created %d documents\" % len(docs),\n           title=\"Generated output file %s\" % path2str(output_file))\n\n\ndef read_conllx(input_path, use_morphology=False, n=0):\n    text = input_path.open('r', encoding='utf-8').read()\n    i = 0\n    for sent in text.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n\n                id_, word, lemma, pos, tag, morph, head, dep, _1, \\\n                _2 = line.split('\\t')\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = (int(head) - 1) if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = pos+'__'+morph  if use_morphology else pos\n                    tokens.append((id_, word, tag, head, dep, 'O'))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break\n\n\ndef generate_sentence(sent):\n    (id_, word, tag, head, dep, _) = sent\n    sentence = {}\n    tokens = []\n    for i, id in enumerate(id_):\n        token = {}\n        token[\"orth\"] = word[id]\n        token[\"tag\"] = tag[id]\n        token[\"head\"] = head[id] - i\n        token[\"dep\"] = dep[id]\n        tokens.append(token)\n    sentence[\"tokens\"] = tokens\n    return sentence\n\n\ndef create_doc(sentences,id):\n    doc = {}\n    paragraph = {}\n    doc[\"id\"] = id\n    doc[\"paragraphs\"] = []\n    paragraph[\"sentences\"] = sentences\n    doc[\"paragraphs\"].append(paragraph)\n    return doc\n",
+          "file_after": "# coding: utf8\nfrom __future__ import unicode_literals\n\nfrom ...compat import json_dumps, path2str\nfrom ...util import prints\n\n\ndef conllu2json(input_path, output_path, n_sents=10, use_morphology=False):\n    \"\"\"\n    Convert conllu files into JSON format for use with train cli.\n    use_morphology parameter enables appending morphology to tags, which is\n    useful for languages such as Spanish, where UD tags are not so rich.\n    \"\"\"\n    # by @dvsrepo, via #11 explosion/spacy-dev-resources\n\n    docs = []\n    sentences = []\n    conll_tuples = read_conllx(input_path, use_morphology=use_morphology)\n\n    for i, (raw_text, tokens) in enumerate(conll_tuples):\n        sentence, brackets = tokens[0]\n        sentences.append(generate_sentence(sentence))\n        # Real-sized documents could be extracted using the comments on the\n        # conluu document\n        if(len(sentences) % n_sents == 0):\n            doc = create_doc(sentences, i)\n            docs.append(doc)\n            sentences = []\n\n    output_filename = input_path.parts[-1].replace(\".conllu\", \".json\")\n    output_file = output_path / output_filename\n    with output_file.open('w', encoding='utf-8') as f:\n        f.write(json_dumps(docs))\n    prints(\"Created %d documents\" % len(docs),\n           title=\"Generated output file %s\" % path2str(output_file))\n\n\ndef read_conllx(input_path, use_morphology=False, n=0):\n    text = input_path.open('r', encoding='utf-8').read()\n    i = 0\n    for sent in text.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n\n                id_, word, lemma, pos, tag, morph, head, dep, _1, \\\n                _2 = line.split('\\t')\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = (int(head) - 1) if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = tag+'__'+morph  if use_morphology else tag\n                    tokens.append((id_, word, tag, head, dep, 'O'))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break\n\n\ndef generate_sentence(sent):\n    (id_, word, tag, head, dep, _) = sent\n    sentence = {}\n    tokens = []\n    for i, id in enumerate(id_):\n        token = {}\n        token[\"orth\"] = word[id]\n        token[\"tag\"] = tag[id]\n        token[\"head\"] = head[id] - i\n        token[\"dep\"] = dep[id]\n        tokens.append(token)\n    sentence[\"tokens\"] = tokens\n    return sentence\n\n\ndef create_doc(sentences,id):\n    doc = {}\n    paragraph = {}\n    doc[\"id\"] = id\n    doc[\"paragraphs\"] = []\n    paragraph[\"sentences\"] = sentences\n    doc[\"paragraphs\"].append(paragraph)\n    return doc\n",
+          "file_patch": "@@ -54,7 +54,7 @@ def read_conllx(input_path, use_morphology=False, n=0):\n                     id_ = int(id_) - 1\n                     head = (int(head) - 1) if head != '0' else id_\n                     dep = 'ROOT' if dep == 'root' else dep\n-                    tag = pos+'__'+morph  if use_morphology else pos\n+                    tag = tag+'__'+morph  if use_morphology else tag\n                     tokens.append((id_, word, tag, head, dep, 'O'))\n                 except:\n                     print(line)\n",
+          "files_name_in_blame_commit": [
+            "conllu2json.py"
+          ]
+        }
+      },
+      "255650dbc2ff0434ce778b18a6744c7b588f79d4": {
+        "commit": {
+          "commit_id": "255650dbc2ff0434ce778b18a6744c7b588f79d4",
+          "commit_message": "Add connlu2json converter from explosion/spacy-dev-resources/#11",
+          "commit_author": "ines",
+          "commit_date": "2017-04-07 13:05:12",
+          "commit_parent": "789ce8a45eb56c6103757a5731fc0f6ee0f02aff"
+        },
+        "function": {
+          "function_name": "read_conllx",
+          "function_code_before": "",
+          "function_code_after": "def read_conllx(input_path, use_morphology=False, n=0):\n    text = input_path.open('r', encoding='utf-8').read()\n    i = 0\n    for sent in text.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n                (id_, word, lemma, pos, tag, morph, head, dep, _1, _2) = line.split('\\t')\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = int(head) - 1 if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = pos + '__' + morph if use_morphology else pos\n                    tokens.append((id_, word, tag, head, dep, 'O'))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break",
+          "function_before_start_line": "",
+          "function_before_end_line": "",
+          "function_after_start_line": 37,
+          "function_after_end_line": 65,
+          "function_before_token_count": 0,
+          "function_after_token_count": 237,
+          "functions_name_modified_file": [
+            "create_doc",
+            "read_conllx",
+            "conllu2json",
+            "generate_sentence"
+          ],
+          "functions_name_all_files": [
+            "create_doc",
+            "read_conllx",
+            "conllu2json",
+            "generate_sentence"
+          ],
+          "functions_name_co_evolved_modified_file": [
+            "create_doc",
+            "generate_sentence",
+            "conllu2json"
+          ],
+          "functions_name_co_evolved_all_files": [
+            "create_doc",
+            "generate_sentence",
+            "conllu2json"
+          ]
+        },
+        "file": {
+          "file_name": "conllu2json.py",
+          "file_nloc": 69,
+          "file_complexity": 20,
+          "file_token_count": 561,
+          "file_before": null,
+          "file_after": "# coding: utf8\nfrom __future__ import unicode_literals, division, print_function\n\nimport json\nfrom ...gold import read_json_file, merge_sents\nfrom ... import util\n\n\ndef conllu2json(input_path, output_path, n_sents=10, use_morphology=False):\n    \"\"\"Convert conllu files into JSON format for use with train cli.\n    use_morphology parameter enables appending morphology to tags, which is\n    useful for languages such as Spanish, where UD tags are not so rich.\n    \"\"\"\n    # by @dvsrepo, via #11 explosion/spacy-dev-resources\n\n    docs = []\n    sentences = []\n    conll_tuples = read_conllx(input_path, use_morphology=use_morphology)\n\n    for i, (raw_text, tokens) in enumerate(conll_tuples):\n        sentence, brackets = tokens[0]\n        sentences.append(generate_sentence(sentence))\n        # Real-sized documents could be extracted using the comments on the\n        # conluu document\n        if(len(sentences) % n_sents == 0):\n            doc = create_doc(sentences, i)\n            docs.append(doc)\n            sentences = []\n\n    output_filename = input_path.parts[-1].replace(\".conllu\", \".json\")\n    output_file = output_path / output_filename\n    json.dump(docs, output_file.open('w', encoding='utf-8'), indent=2)\n    util.print_msg(\"Created {} documents\".format(len(docs)),\n                   title=\"Generated output file {}\".format(output_file))\n\n\ndef read_conllx(input_path, use_morphology=False, n=0):\n    text = input_path.open('r', encoding='utf-8').read()\n    i = 0\n    for sent in text.strip().split('\\n\\n'):\n        lines = sent.strip().split('\\n')\n        if lines:\n            while lines[0].startswith('#'):\n                lines.pop(0)\n            tokens = []\n            for line in lines:\n\n                id_, word, lemma, pos, tag, morph, head, dep, _1, \\\n                _2 = line.split('\\t')\n                if '-' in id_ or '.' in id_:\n                    continue\n                try:\n                    id_ = int(id_) - 1\n                    head = (int(head) - 1) if head != '0' else id_\n                    dep = 'ROOT' if dep == 'root' else dep\n                    tag = pos+'__'+morph  if use_morphology else pos\n                    tokens.append((id_, word, tag, head, dep, 'O'))\n                except:\n                    print(line)\n                    raise\n            tuples = [list(t) for t in zip(*tokens)]\n            yield (None, [[tuples, []]])\n            i += 1\n            if n >= 1 and i >= n:\n                break\n\n\ndef generate_sentence(sent):\n    (id_, word, tag, head, dep, _) = sent\n    sentence = {}\n    tokens = []\n    for i, id in enumerate(id_):\n        token = {}\n        token[\"orth\"] = word[id]\n        token[\"tag\"] = tag[id]\n        token[\"head\"] = head[id] - i\n        token[\"dep\"] = dep[id]\n        tokens.append(token)\n    sentence[\"tokens\"] = tokens\n    return sentence\n\n\ndef create_doc(sentences,id):\n    doc = {}\n    paragraph = {}\n    doc[\"id\"] = id\n    doc[\"paragraphs\"] = []\n    paragraph[\"sentences\"] = sentences\n    doc[\"paragraphs\"].append(paragraph)\n    return doc\n",
+          "file_patch": "@@ -0,0 +1,90 @@\n+# coding: utf8\n+from __future__ import unicode_literals, division, print_function\n+\n+import json\n+from ...gold import read_json_file, merge_sents\n+from ... import util\n+\n+\n+def conllu2json(input_path, output_path, n_sents=10, use_morphology=False):\n+    \"\"\"Convert conllu files into JSON format for use with train cli.\n+    use_morphology parameter enables appending morphology to tags, which is\n+    useful for languages such as Spanish, where UD tags are not so rich.\n+    \"\"\"\n+    # by @dvsrepo, via #11 explosion/spacy-dev-resources\n+\n+    docs = []\n+    sentences = []\n+    conll_tuples = read_conllx(input_path, use_morphology=use_morphology)\n+\n+    for i, (raw_text, tokens) in enumerate(conll_tuples):\n+        sentence, brackets = tokens[0]\n+        sentences.append(generate_sentence(sentence))\n+        # Real-sized documents could be extracted using the comments on the\n+        # conluu document\n+        if(len(sentences) % n_sents == 0):\n+            doc = create_doc(sentences, i)\n+            docs.append(doc)\n+            sentences = []\n+\n+    output_filename = input_path.parts[-1].replace(\".conllu\", \".json\")\n+    output_file = output_path / output_filename\n+    json.dump(docs, output_file.open('w', encoding='utf-8'), indent=2)\n+    util.print_msg(\"Created {} documents\".format(len(docs)),\n+                   title=\"Generated output file {}\".format(output_file))\n+\n+\n+def read_conllx(input_path, use_morphology=False, n=0):\n+    text = input_path.open('r', encoding='utf-8').read()\n+    i = 0\n+    for sent in text.strip().split('\\n\\n'):\n+        lines = sent.strip().split('\\n')\n+        if lines:\n+            while lines[0].startswith('#'):\n+                lines.pop(0)\n+            tokens = []\n+            for line in lines:\n+\n+                id_, word, lemma, pos, tag, morph, head, dep, _1, \\\n+                _2 = line.split('\\t')\n+                if '-' in id_ or '.' in id_:\n+                    continue\n+                try:\n+                    id_ = int(id_) - 1\n+                    head = (int(head) - 1) if head != '0' else id_\n+                    dep = 'ROOT' if dep == 'root' else dep\n+                    tag = pos+'__'+morph  if use_morphology else pos\n+                    tokens.append((id_, word, tag, head, dep, 'O'))\n+                except:\n+                    print(line)\n+                    raise\n+            tuples = [list(t) for t in zip(*tokens)]\n+            yield (None, [[tuples, []]])\n+            i += 1\n+            if n >= 1 and i >= n:\n+                break\n+\n+\n+def generate_sentence(sent):\n+    (id_, word, tag, head, dep, _) = sent\n+    sentence = {}\n+    tokens = []\n+    for i, id in enumerate(id_):\n+        token = {}\n+        token[\"orth\"] = word[id]\n+        token[\"tag\"] = tag[id]\n+        token[\"head\"] = head[id] - i\n+        token[\"dep\"] = dep[id]\n+        tokens.append(token)\n+    sentence[\"tokens\"] = tokens\n+    return sentence\n+\n+\n+def create_doc(sentences,id):\n+    doc = {}\n+    paragraph = {}\n+    doc[\"id\"] = id\n+    doc[\"paragraphs\"] = []\n+    paragraph[\"sentences\"] = sentences\n+    doc[\"paragraphs\"].append(paragraph)\n+    return doc\n",
+          "files_name_in_blame_commit": [
+            "__init__.py",
+            "conllu2json.py"
+          ]
+        }
+      }
+    }
+  }
+}

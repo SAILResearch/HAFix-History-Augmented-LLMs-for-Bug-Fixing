@@ -1,0 +1,58 @@
+{
+  "id": "50",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "c0c584b13a0d6f5e177e25f48d5de918f1bef7e2",
+      "commit_message": "mkdir -p\n\nWhen adding directories using `mkdir`, intermediate directories have to\nexist, unless you specify the `-p` option:\n\n    $ mkdir foo/bar/baz\n    mkdir: foo/bar: No such file or directory\n    $ fuck\n    mkdir -p foo/bar/baz",
+      "commit_author": "Nils Winkler",
+      "commit_date": "2015-04-20 18:38:03",
+      "commit_parent": "9ecda9a399cab6a683eed27e5dd8de7b394c581c"
+    },
+    "function": {
+      "function_name": "get_new_command",
+      "function_code_before": "",
+      "function_code_after": "def get_new_command(command, settings):\n    return re.sub('^mkdir (.*)', 'mkdir -p \\\\1', command.script)",
+      "function_before_start_line": "",
+      "function_before_end_line": "",
+      "function_after_start_line": 8,
+      "function_after_end_line": 9,
+      "function_before_token_count": 0,
+      "function_after_token_count": 20,
+      "functions_name_modified_file": [
+        "match",
+        "get_new_command"
+      ],
+      "functions_name_all_files": [
+        "test_get_new_command",
+        "match",
+        "get_new_command",
+        "test_match"
+      ],
+      "functions_name_co_evolved_modified_file": [
+        "match"
+      ],
+      "functions_name_co_evolved_all_files": [
+        "test_get_new_command",
+        "match",
+        "test_match"
+      ]
+    },
+    "file": {
+      "file_name": "mkdir_p.py",
+      "file_nloc": 6,
+      "file_complexity": 3,
+      "file_token_count": 45,
+      "file_before": null,
+      "file_after": "import re\n\ndef match(command, settings):\n    return ('mkdir' in command.script\n            and 'No such file or directory' in command.stderr)\n\n\ndef get_new_command(command, settings):\n    return re.sub('^mkdir (.*)', 'mkdir -p \\\\1', command.script)\n",
+      "file_patch": "@@ -0,0 +1,9 @@\n+import re\n+\n+def match(command, settings):\n+    return ('mkdir' in command.script\n+            and 'No such file or directory' in command.stderr)\n+\n+\n+def get_new_command(command, settings):\n+    return re.sub('^mkdir (.*)', 'mkdir -p \\\\1', command.script)\n",
+      "files_name_in_blame_commit": [
+        "test_mkdir_p.py",
+        "mkdir_p.py"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 3
+  },
+  "recursive_blame_commits": {}
+}

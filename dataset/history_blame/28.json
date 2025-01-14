@@ -1,0 +1,443 @@
+{
+  "id": "28",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "c4a607fc787b2b1d61bf309c98dc9ced38d9d445",
+      "commit_message": "Raise ValueError if url has no scheme in Request constructor",
+      "commit_author": "Pablo Hoffman",
+      "commit_date": "2011-06-10 18:22:36",
+      "commit_parent": "88e33ad0ad95d5f9049d8d8b1359819f4fbbf704"
+    },
+    "function": {
+      "function_name": "_set_url",
+      "function_code_before": "def _set_url(self, url):\n    if isinstance(url, str):\n        self._url = safe_url_string(url)\n    elif isinstance(url, unicode):\n        if self.encoding is None:\n            raise TypeError('Cannot convert unicode url - %s has no encoding' % type(self).__name__)\n        unicode_url = url if isinstance(url, unicode) else url.decode(self.encoding)\n        self._url = safe_url_string(unicode_url, self.encoding)\n    else:\n        raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)",
+      "function_code_after": "def _set_url(self, url):\n    if isinstance(url, str):\n        self._url = safe_url_string(url)\n    elif isinstance(url, unicode):\n        if self.encoding is None:\n            raise TypeError('Cannot convert unicode url - %s has no encoding' % type(self).__name__)\n        unicode_url = url if isinstance(url, unicode) else url.decode(self.encoding)\n        self._url = safe_url_string(unicode_url, self.encoding)\n    else:\n        raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)\n    if ':' not in self._url:\n        raise ValueError('Missing scheme in request url: %s' % self._url)",
+      "function_before_start_line": 52,
+      "function_before_end_line": 62,
+      "function_after_start_line": 52,
+      "function_after_end_line": 64,
+      "function_before_token_count": 95,
+      "function_after_token_count": 112,
+      "functions_name_modified_file": [
+        "__init__",
+        "_set_body",
+        "_get_url",
+        "copy",
+        "__str__",
+        "replace",
+        "_set_url",
+        "meta",
+        "_get_body",
+        "encoding"
+      ],
+      "functions_name_all_files": [
+        "test_from_response_override_params",
+        "test_from_response_submit_not_first_clickeable",
+        "_get_url",
+        "test_from_response_dont_click",
+        "test_custom_encoding",
+        "test_eq",
+        "test_copy_inherited_classes",
+        "test_from_response_post",
+        "test_empty_formdata",
+        "test_url_no_scheme",
+        "test_from_response_formname_errors_formnumber",
+        "test_url",
+        "test_from_response_extra_headers",
+        "test_from_response_formname_exists",
+        "test_from_response_formname_notexist",
+        "_set_body",
+        "test_init",
+        "test_xmlrpc_dumps",
+        "test_copy",
+        "test_replace",
+        "test_headers",
+        "test_default_encoding",
+        "__str__",
+        "_test_request",
+        "replace",
+        "_set_url",
+        "meta",
+        "_get_body",
+        "test_from_response_noformname",
+        "encoding",
+        "__init__",
+        "test_method_always_str",
+        "test_from_response_errors_formnumber",
+        "test_multi_key_values",
+        "test_from_response_errors_noform",
+        "copy",
+        "test_from_response_submit_first_clickeable",
+        "test_from_response_get",
+        "test_body",
+        "test_weakref_slots"
+      ],
+      "functions_name_co_evolved_modified_file": [],
+      "functions_name_co_evolved_all_files": [
+        "test_url_no_scheme"
+      ]
+    },
+    "file": {
+      "file_name": "__init__.py",
+      "file_nloc": 81,
+      "file_complexity": 25,
+      "file_token_count": 606,
+      "file_before": "\"\"\"\nThis module implements the Request class which is used to represent HTTP\nrequests in Scrapy.\n\nSee documentation in docs/topics/request-response.rst\n\"\"\"\n\nimport copy\n\nfrom w3lib.url import safe_url_string\n\nfrom scrapy.http.headers import Headers\nfrom scrapy.utils.trackref import object_ref\nfrom scrapy.utils.decorator import deprecated\nfrom scrapy.http.common import deprecated_setter\n\nclass Request(object_ref):\n\n    __slots__ = ['_encoding', 'method', '_url', '_body', '_meta', \\\n        'dont_filter', 'headers', 'cookies', 'callback', 'errback', 'priority', \\\n        '__weakref__']\n\n    def __init__(self, url, callback=None, method='GET', headers=None, body=None, \n                 cookies=None, meta=None, encoding='utf-8', priority=0.0,\n                 dont_filter=False, errback=None):\n\n        self._encoding = encoding  # this one has to be set first\n        self.method = str(method).upper()\n        self._set_url(url)\n        self._set_body(body)\n        self.priority = priority\n\n        assert callback or not errback, \"Cannot use errback without a callback\"\n        self.callback = callback\n        self.errback = errback\n\n        self.cookies = cookies or {}\n        self.headers = Headers(headers or {}, encoding=encoding)\n        self.dont_filter = dont_filter\n\n        self._meta = dict(meta) if meta else None\n\n    @property\n    def meta(self):\n        if self._meta is None:\n            self._meta = {}\n        return self._meta\n\n    def _get_url(self):\n        return self._url\n\n    def _set_url(self, url):\n        if isinstance(url, str):\n            self._url = safe_url_string(url)\n        elif isinstance(url, unicode):\n            if self.encoding is None:\n                raise TypeError('Cannot convert unicode url - %s has no encoding' %\n                    type(self).__name__)\n            unicode_url = url if isinstance(url, unicode) else url.decode(self.encoding)\n            self._url = safe_url_string(unicode_url, self.encoding)\n        else:\n            raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)\n\n    url = property(_get_url, deprecated_setter(_set_url, 'url'))\n\n    def _get_body(self):\n        return self._body\n\n    def _set_body(self, body):\n        if isinstance(body, str):\n            self._body = body\n        elif isinstance(body, unicode):\n            if self.encoding is None:\n                raise TypeError('Cannot convert unicode body - %s has no encoding' %\n                    type(self).__name__)\n            self._body = body.encode(self.encoding)\n        elif body is None:\n            self._body = ''\n        else:\n            raise TypeError(\"Request body must either str or unicode. Got: '%s'\" % type(body).__name__)\n\n    body = property(_get_body, deprecated_setter(_set_body, 'body'))\n\n    @property\n    def encoding(self):\n        return self._encoding\n\n    def __str__(self):\n        return \"<%s %s>\" % (self.method, self.url)\n\n    __repr__ = __str__\n\n    def copy(self):\n        \"\"\"Return a copy of this Request\"\"\"\n        return self.replace()\n\n    def replace(self, *args, **kwargs):\n        \"\"\"Create a new Request with the same attributes except for those\n        given new values.\n        \"\"\"\n        for x in ['url', 'method', 'headers', 'body', 'cookies', 'meta', \\\n                'encoding', 'priority', 'dont_filter', 'callback', 'errback']:\n            kwargs.setdefault(x, getattr(self, x))\n        cls = kwargs.pop('cls', self.__class__)\n        return cls(*args, **kwargs)\n",
+      "file_after": "\"\"\"\nThis module implements the Request class which is used to represent HTTP\nrequests in Scrapy.\n\nSee documentation in docs/topics/request-response.rst\n\"\"\"\n\nimport copy\n\nfrom w3lib.url import safe_url_string\n\nfrom scrapy.http.headers import Headers\nfrom scrapy.utils.trackref import object_ref\nfrom scrapy.utils.decorator import deprecated\nfrom scrapy.http.common import deprecated_setter\n\nclass Request(object_ref):\n\n    __slots__ = ['_encoding', 'method', '_url', '_body', '_meta', \\\n        'dont_filter', 'headers', 'cookies', 'callback', 'errback', 'priority', \\\n        '__weakref__']\n\n    def __init__(self, url, callback=None, method='GET', headers=None, body=None, \n                 cookies=None, meta=None, encoding='utf-8', priority=0.0,\n                 dont_filter=False, errback=None):\n\n        self._encoding = encoding  # this one has to be set first\n        self.method = str(method).upper()\n        self._set_url(url)\n        self._set_body(body)\n        self.priority = priority\n\n        assert callback or not errback, \"Cannot use errback without a callback\"\n        self.callback = callback\n        self.errback = errback\n\n        self.cookies = cookies or {}\n        self.headers = Headers(headers or {}, encoding=encoding)\n        self.dont_filter = dont_filter\n\n        self._meta = dict(meta) if meta else None\n\n    @property\n    def meta(self):\n        if self._meta is None:\n            self._meta = {}\n        return self._meta\n\n    def _get_url(self):\n        return self._url\n\n    def _set_url(self, url):\n        if isinstance(url, str):\n            self._url = safe_url_string(url)\n        elif isinstance(url, unicode):\n            if self.encoding is None:\n                raise TypeError('Cannot convert unicode url - %s has no encoding' %\n                    type(self).__name__)\n            unicode_url = url if isinstance(url, unicode) else url.decode(self.encoding)\n            self._url = safe_url_string(unicode_url, self.encoding)\n        else:\n            raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)\n        if ':' not in self._url:\n            raise ValueError('Missing scheme in request url: %s' % self._url)\n\n    url = property(_get_url, deprecated_setter(_set_url, 'url'))\n\n    def _get_body(self):\n        return self._body\n\n    def _set_body(self, body):\n        if isinstance(body, str):\n            self._body = body\n        elif isinstance(body, unicode):\n            if self.encoding is None:\n                raise TypeError('Cannot convert unicode body - %s has no encoding' %\n                    type(self).__name__)\n            self._body = body.encode(self.encoding)\n        elif body is None:\n            self._body = ''\n        else:\n            raise TypeError(\"Request body must either str or unicode. Got: '%s'\" % type(body).__name__)\n\n    body = property(_get_body, deprecated_setter(_set_body, 'body'))\n\n    @property\n    def encoding(self):\n        return self._encoding\n\n    def __str__(self):\n        return \"<%s %s>\" % (self.method, self.url)\n\n    __repr__ = __str__\n\n    def copy(self):\n        \"\"\"Return a copy of this Request\"\"\"\n        return self.replace()\n\n    def replace(self, *args, **kwargs):\n        \"\"\"Create a new Request with the same attributes except for those\n        given new values.\n        \"\"\"\n        for x in ['url', 'method', 'headers', 'body', 'cookies', 'meta', \\\n                'encoding', 'priority', 'dont_filter', 'callback', 'errback']:\n            kwargs.setdefault(x, getattr(self, x))\n        cls = kwargs.pop('cls', self.__class__)\n        return cls(*args, **kwargs)\n",
+      "file_patch": "@@ -60,6 +60,8 @@ class Request(object_ref):\n             self._url = safe_url_string(unicode_url, self.encoding)\n         else:\n             raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)\n+        if ':' not in self._url:\n+            raise ValueError('Missing scheme in request url: %s' % self._url)\n \n     url = property(_get_url, deprecated_setter(_set_url, 'url'))\n \n",
+      "files_name_in_blame_commit": [
+        "__init__.py",
+        "test_http_request.py"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 67
+  },
+  "recursive_blame_commits": {
+    "recursive_blame_function_lines": {
+      "52": {
+        "commit_id": "b20837a02820c070f9baea324d3717884b69f371",
+        "line_code": "    def _set_url(self, url):",
+        "commit_date": "2009-08-17 13:01:33",
+        "valid": 1
+      },
+      "53": {
+        "commit_id": "2974c2c4b56f73aac40232d49d38aa92e17c0239",
+        "line_code": "        if isinstance(url, str):",
+        "commit_date": "2009-09-07 15:20:41",
+        "valid": 1
+      },
+      "54": {
+        "commit_id": "2974c2c4b56f73aac40232d49d38aa92e17c0239",
+        "line_code": "            self._url = safe_url_string(url)",
+        "commit_date": "2009-09-07 15:20:41",
+        "valid": 1
+      },
+      "55": {
+        "commit_id": "2974c2c4b56f73aac40232d49d38aa92e17c0239",
+        "line_code": "        elif isinstance(url, unicode):",
+        "commit_date": "2009-09-07 15:20:41",
+        "valid": 1
+      },
+      "56": {
+        "commit_id": "2974c2c4b56f73aac40232d49d38aa92e17c0239",
+        "line_code": "            if self.encoding is None:",
+        "commit_date": "2009-09-07 15:20:41",
+        "valid": 1
+      },
+      "57": {
+        "commit_id": "2974c2c4b56f73aac40232d49d38aa92e17c0239",
+        "line_code": "                raise TypeError('Cannot convert unicode url - %s has no encoding' %",
+        "commit_date": "2009-09-07 15:20:41",
+        "valid": 1
+      },
+      "58": {
+        "commit_id": "2974c2c4b56f73aac40232d49d38aa92e17c0239",
+        "line_code": "                    type(self).__name__)",
+        "commit_date": "2009-09-07 15:20:41",
+        "valid": 1
+      },
+      "59": {
+        "commit_id": "2974c2c4b56f73aac40232d49d38aa92e17c0239",
+        "line_code": "            unicode_url = url if isinstance(url, unicode) else url.decode(self.encoding)",
+        "commit_date": "2009-09-07 15:20:41",
+        "valid": 1
+      },
+      "60": {
+        "commit_id": "2974c2c4b56f73aac40232d49d38aa92e17c0239",
+        "line_code": "            self._url = safe_url_string(unicode_url, self.encoding)",
+        "commit_date": "2009-09-07 15:20:41",
+        "valid": 1
+      },
+      "61": {
+        "commit_id": "0c9631594d8e3d2e1917e2d46ec67afcf719d1bf",
+        "line_code": "        else:",
+        "commit_date": "2009-03-24 20:02:42",
+        "valid": 1
+      },
+      "62": {
+        "commit_id": "0c9631594d8e3d2e1917e2d46ec67afcf719d1bf",
+        "line_code": "            raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)",
+        "commit_date": "2009-03-24 20:02:42",
+        "valid": 1
+      }
+    },
+    "commits": {
+      "2974c2c4b56f73aac40232d49d38aa92e17c0239": {
+        "commit": {
+          "commit_id": "2974c2c4b56f73aac40232d49d38aa92e17c0239",
+          "commit_message": "some additional checks on using unicode url/body in Request/Response objects",
+          "commit_author": "Pablo Hoffman",
+          "commit_date": "2009-09-07 15:20:41",
+          "commit_parent": "7a88c0d8e584c130ce8701f3cae535499746d59a"
+        },
+        "function": {
+          "function_name": "_set_url",
+          "function_code_before": "def _set_url(self, url):\n    if isinstance(url, basestring):\n        decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)\n        self._url = safe_url_string(decoded_url, self.encoding)\n    else:\n        raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)",
+          "function_code_after": "def _set_url(self, url):\n    if isinstance(url, str):\n        self._url = safe_url_string(url)\n    elif isinstance(url, unicode):\n        if self.encoding is None:\n            raise TypeError('Cannot convert unicode url - %s has no encoding' % type(self).__name__)\n        unicode_url = url if isinstance(url, unicode) else url.decode(self.encoding)\n        self._url = safe_url_string(unicode_url, self.encoding)\n    else:\n        raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)",
+          "function_before_start_line": 51,
+          "function_before_end_line": 56,
+          "function_after_start_line": 51,
+          "function_after_end_line": 61,
+          "function_before_token_count": 60,
+          "function_after_token_count": 95,
+          "functions_name_modified_file": [
+            "__init__",
+            "_set_body",
+            "_get_url",
+            "copy",
+            "__str__",
+            "replace",
+            "_set_url",
+            "meta",
+            "_get_body",
+            "__repr__",
+            "encoding"
+          ],
+          "functions_name_all_files": [
+            "_get_url",
+            "headers_encoding",
+            "test_unicode_url",
+            "body_encoding",
+            "body_as_unicode",
+            "test_copy_inherited_classes",
+            "test_unicode_body",
+            "test_encoding",
+            "_assert_response_values",
+            "test_xml_encoding",
+            "_set_body",
+            "test_init",
+            "test_copy",
+            "test_replace",
+            "__str__",
+            "replace",
+            "_set_url",
+            "meta",
+            "_get_body",
+            "__repr__",
+            "encoding",
+            "__init__",
+            "test_no_unicode_url",
+            "copy",
+            "test_html_encoding",
+            "_body_declared_encoding",
+            "test_weakref_slots"
+          ],
+          "functions_name_co_evolved_modified_file": [
+            "_set_body"
+          ],
+          "functions_name_co_evolved_all_files": [
+            "_set_body",
+            "test_unicode_url"
+          ]
+        },
+        "file": {
+          "file_name": "__init__.py",
+          "file_nloc": 95,
+          "file_complexity": 34,
+          "file_token_count": 731,
+          "file_before": "\"\"\"\nThis module implements the Request class which is used to represent HTTP\nrequests in Scrapy.\n\nSee documentation in docs/topics/request-response.rst\n\"\"\"\n\nimport copy\n\nfrom twisted.internet import defer\n\nfrom scrapy.http.headers import Headers\nfrom scrapy.utils.url import safe_url_string\nfrom scrapy.utils.trackref import object_ref\n\nclass Request(object_ref):\n\n    __slots__ = ['_encoding', 'method', '_url', '_body', '_meta', \\\n        'dont_filter', 'headers', 'cookies', 'deferred', 'priority', \\\n        '__weakref__']\n\n    def __init__(self, url, callback=None, method='GET', headers=None, body=None, \n                 cookies=None, meta=None, encoding='utf-8', priority=0.0,\n                 dont_filter=False, errback=None):\n\n        self._encoding = encoding  # this one has to be set first\n        self.method = method.upper()\n        self._set_url(url)\n        self._set_body(body)\n        self.priority = priority\n\n        if callable(callback):\n            callback = defer.Deferred().addCallbacks(callback, errback)\n        self.deferred = callback or defer.Deferred()\n\n        self.cookies = cookies or {}\n        self.headers = Headers(headers or {}, encoding=encoding)\n        self.dont_filter = dont_filter\n\n        self._meta = dict(meta) if meta else None\n\n    @property\n    def meta(self):\n        if self._meta is None:\n            self._meta = {}\n        return self._meta\n\n    def _get_url(self):\n        return self._url\n\n    def _set_url(self, url):\n        if isinstance(url, basestring):\n            decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)\n            self._url = safe_url_string(decoded_url, self.encoding)\n        else:\n            raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)\n\n    url = property(_get_url, _set_url)\n\n    def _get_body(self):\n        return self._body\n\n    def _set_body(self, body):\n        if isinstance(body, str):\n            self._body = body\n        elif isinstance(body, unicode):\n            self._body = body.encode(self.encoding)\n        elif body is None:\n            self._body = ''\n        else:\n            raise TypeError(\"Request body must either str or unicode. Got: '%s'\" % type(body).__name__)\n\n    body = property(_get_body, _set_body)\n\n    @property\n    def encoding(self):\n        return self._encoding\n\n    def __str__(self):\n        if self.method == 'GET':\n            return \"<%s>\" % self.url\n        else:\n            return \"<%s %s>\" % (self.method, self.url)\n\n    def __repr__(self):\n        d = {\n            'method': self.method,\n            'url': self.url,\n            'headers': self.headers,\n            'body': self.body,\n            'cookies': self.cookies,\n            'meta': self.meta,\n        }\n        return \"%s(%s)\" % (self.__class__.__name__, repr(d))\n\n    def copy(self):\n        \"\"\"Return a copy of this Request\"\"\"\n        return self.replace()\n\n    def replace(self, url=None, callback=None, method=None, headers=None, body=None, \n                cookies=None, meta=None, encoding=None, dont_filter=None):\n        \"\"\"Create a new Request with the same attributes except for those\n        given new values.\n        \"\"\"\n        return self.__class__(url=self.url if url is None else url,\n                              callback=callback,\n                              method=self.method if method is None else method,\n                              headers=copy.deepcopy(self.headers) if headers is None else headers,\n                              body=self.body if body is None else body,\n                              cookies=self.cookies if cookies is None else cookies,\n                              meta=self.meta if meta is None else meta,\n                              encoding=self.encoding if encoding is None else encoding,\n                              dont_filter=self.dont_filter if dont_filter is None else dont_filter)\n",
+          "file_after": "\"\"\"\nThis module implements the Request class which is used to represent HTTP\nrequests in Scrapy.\n\nSee documentation in docs/topics/request-response.rst\n\"\"\"\n\nimport copy\n\nfrom twisted.internet import defer\n\nfrom scrapy.http.headers import Headers\nfrom scrapy.utils.url import safe_url_string\nfrom scrapy.utils.trackref import object_ref\n\nclass Request(object_ref):\n\n    __slots__ = ['_encoding', 'method', '_url', '_body', '_meta', \\\n        'dont_filter', 'headers', 'cookies', 'deferred', 'priority', \\\n        '__weakref__']\n\n    def __init__(self, url, callback=None, method='GET', headers=None, body=None, \n                 cookies=None, meta=None, encoding='utf-8', priority=0.0,\n                 dont_filter=False, errback=None):\n\n        self._encoding = encoding  # this one has to be set first\n        self.method = method.upper()\n        self._set_url(url)\n        self._set_body(body)\n        self.priority = priority\n\n        if callable(callback):\n            callback = defer.Deferred().addCallbacks(callback, errback)\n        self.deferred = callback or defer.Deferred()\n\n        self.cookies = cookies or {}\n        self.headers = Headers(headers or {}, encoding=encoding)\n        self.dont_filter = dont_filter\n\n        self._meta = dict(meta) if meta else None\n\n    @property\n    def meta(self):\n        if self._meta is None:\n            self._meta = {}\n        return self._meta\n\n    def _get_url(self):\n        return self._url\n\n    def _set_url(self, url):\n        if isinstance(url, str):\n            self._url = safe_url_string(url)\n        elif isinstance(url, unicode):\n            if self.encoding is None:\n                raise TypeError('Cannot convert unicode url - %s has no encoding' %\n                    type(self).__name__)\n            unicode_url = url if isinstance(url, unicode) else url.decode(self.encoding)\n            self._url = safe_url_string(unicode_url, self.encoding)\n        else:\n            raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)\n\n    url = property(_get_url, _set_url)\n\n    def _get_body(self):\n        return self._body\n\n    def _set_body(self, body):\n        if isinstance(body, str):\n            self._body = body\n        elif isinstance(body, unicode):\n            if self.encoding is None:\n                raise TypeError('Cannot convert unicode body - %s has no encoding' %\n                    type(self).__name__)\n            self._body = body.encode(self.encoding)\n        elif body is None:\n            self._body = ''\n        else:\n            raise TypeError(\"Request body must either str or unicode. Got: '%s'\" % type(body).__name__)\n\n    body = property(_get_body, _set_body)\n\n    @property\n    def encoding(self):\n        return self._encoding\n\n    def __str__(self):\n        if self.method == 'GET':\n            return \"<%s>\" % self.url\n        else:\n            return \"<%s %s>\" % (self.method, self.url)\n\n    def __repr__(self):\n        d = {\n            'method': self.method,\n            'url': self.url,\n            'headers': self.headers,\n            'body': self.body,\n            'cookies': self.cookies,\n            'meta': self.meta,\n        }\n        return \"%s(%s)\" % (self.__class__.__name__, repr(d))\n\n    def copy(self):\n        \"\"\"Return a copy of this Request\"\"\"\n        return self.replace()\n\n    def replace(self, url=None, callback=None, method=None, headers=None, body=None, \n                cookies=None, meta=None, encoding=None, dont_filter=None):\n        \"\"\"Create a new Request with the same attributes except for those\n        given new values.\n        \"\"\"\n        return self.__class__(url=self.url if url is None else url,\n                              callback=callback,\n                              method=self.method if method is None else method,\n                              headers=copy.deepcopy(self.headers) if headers is None else headers,\n                              body=self.body if body is None else body,\n                              cookies=self.cookies if cookies is None else cookies,\n                              meta=self.meta if meta is None else meta,\n                              encoding=self.encoding if encoding is None else encoding,\n                              dont_filter=self.dont_filter if dont_filter is None else dont_filter)\n",
+          "file_patch": "@@ -49,9 +49,14 @@ class Request(object_ref):\n         return self._url\n \n     def _set_url(self, url):\n-        if isinstance(url, basestring):\n-            decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)\n-            self._url = safe_url_string(decoded_url, self.encoding)\n+        if isinstance(url, str):\n+            self._url = safe_url_string(url)\n+        elif isinstance(url, unicode):\n+            if self.encoding is None:\n+                raise TypeError('Cannot convert unicode url - %s has no encoding' %\n+                    type(self).__name__)\n+            unicode_url = url if isinstance(url, unicode) else url.decode(self.encoding)\n+            self._url = safe_url_string(unicode_url, self.encoding)\n         else:\n             raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)\n \n@@ -64,6 +69,9 @@ class Request(object_ref):\n         if isinstance(body, str):\n             self._body = body\n         elif isinstance(body, unicode):\n+            if self.encoding is None:\n+                raise TypeError('Cannot convert unicode body - %s has no encoding' %\n+                    type(self).__name__)\n             self._body = body.encode(self.encoding)\n         elif body is None:\n             self._body = ''\n",
+          "files_name_in_blame_commit": [
+            "__init__.py",
+            "text.py",
+            "test_http_response.py"
+          ]
+        }
+      },
+      "b20837a02820c070f9baea324d3717884b69f371": {
+        "commit": {
+          "commit_id": "b20837a02820c070f9baea324d3717884b69f371",
+          "commit_message": "added __slots__ to Request/Response/Headers objects, to reduce memory footprint",
+          "commit_author": "Pablo Hoffman",
+          "commit_date": "2009-08-17 13:01:33",
+          "commit_parent": "45ed662ee5b7e2189cbd70b55aa2df3cf251182d"
+        },
+        "function": {
+          "function_name": "_set_url",
+          "function_code_before": "",
+          "function_code_after": "def _set_url(self, url):\n    if isinstance(url, basestring):\n        decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)\n        self._url = Url(safe_url_string(decoded_url, self.encoding))\n    elif isinstance(url, Url):\n        self._url = url\n    else:\n        raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)",
+          "function_before_start_line": "",
+          "function_before_end_line": "",
+          "function_after_start_line": 58,
+          "function_after_end_line": 65,
+          "function_before_token_count": 0,
+          "function_after_token_count": 76,
+          "functions_name_modified_file": [
+            "__init__",
+            "_set_body",
+            "_get_url",
+            "copy",
+            "__str__",
+            "replace",
+            "_set_url",
+            "meta",
+            "_get_body",
+            "__repr__",
+            "cache",
+            "encoding"
+          ],
+          "functions_name_all_files": [
+            "getlist",
+            "setlistdefault",
+            "_get_url",
+            "setlist",
+            "headers_encoding",
+            "normkey",
+            "set_body",
+            "body_encoding",
+            "body_as_unicode",
+            "_body_inferred_encoding",
+            "_set_body",
+            "iteritems",
+            "get",
+            "cache",
+            "__str__",
+            "_set_url",
+            "meta",
+            "_get_body",
+            "replace",
+            "__repr__",
+            "__getitem__",
+            "encoding",
+            "__init__",
+            "values",
+            "__copy__",
+            "copy",
+            "normvalue",
+            "_body_declared_encoding",
+            "to_string",
+            "items",
+            "appendlist"
+          ],
+          "functions_name_co_evolved_modified_file": [
+            "__init__",
+            "_set_body",
+            "set_url",
+            "_get_url",
+            "set_body",
+            "meta",
+            "_get_body",
+            "cache"
+          ],
+          "functions_name_co_evolved_all_files": [
+            "__init__",
+            "_set_body",
+            "set_url",
+            "_get_url",
+            "set_body",
+            "meta",
+            "_get_body",
+            "cache"
+          ]
+        },
+        "file": {
+          "file_name": "__init__.py",
+          "file_nloc": 95,
+          "file_complexity": 34,
+          "file_token_count": 725,
+          "file_before": "\"\"\"\nThis module implements the Request class which is used to represent HTTP\nrequests in Scrapy.\n\nSee documentation in docs/ref/request-response.rst\n\"\"\"\n\nimport copy\n\nfrom twisted.internet import defer\n\nfrom scrapy.http.url import Url\nfrom scrapy.http.headers import Headers\nfrom scrapy.utils.url import safe_url_string\n\nclass Request(object):\n\n    def __init__(self, url, callback=None, method='GET', headers=None, body=None, \n                 cookies=None, meta=None, encoding='utf-8', priority=0.0,\n                 dont_filter=False, errback=None):\n\n        self._encoding = encoding  # this one has to be set first\n        self.method = method.upper()\n        self.set_url(url)\n        self.set_body(body)\n        self.priority = priority\n\n        if callable(callback):\n            callback = defer.Deferred().addCallbacks(callback, errback)\n        self.deferred = callback or defer.Deferred()\n\n        self.cookies = cookies or {}\n        self.headers = Headers(headers or {}, encoding=encoding)\n        self.dont_filter = dont_filter\n\n        self.meta = {} if meta is None else dict(meta)\n        self.cache = {}\n        \n    def set_url(self, url):\n        if isinstance(url, basestring):\n            decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)\n            self._url = Url(safe_url_string(decoded_url, self.encoding))\n        elif isinstance(url, Url):\n            self._url = url\n        else:\n            raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)\n    url = property(lambda x: x._url, set_url)\n\n    def set_body(self, body):\n        if isinstance(body, str):\n            self._body = body\n        elif isinstance(body, unicode):\n            self._body = body.encode(self.encoding)\n        elif body is None:\n            self._body = ''\n        else:\n            raise TypeError(\"Request body must either str or unicode. Got: '%s'\" % type(body).__name__)\n    body = property(lambda x: x._body, set_body)\n\n    @property\n    def encoding(self):\n        return self._encoding\n\n    def __str__(self):\n        if self.method == 'GET':\n            return \"<%s>\" % self.url\n        else:\n            return \"<%s %s>\" % (self.method, self.url)\n\n    def __repr__(self):\n        d = {\n            'method': self.method,\n            'url': self.url,\n            'headers': self.headers,\n            'body': self.body,\n            'cookies': self.cookies,\n            'meta': self.meta,\n            }\n        return \"%s(%s)\" % (self.__class__.__name__, repr(d))\n\n    def copy(self):\n        \"\"\"Return a copy of this Request\"\"\"\n        return self.replace()\n\n    def replace(self, url=None, callback=None, method=None, headers=None, body=None, \n                cookies=None, meta=None, encoding=None, dont_filter=None):\n        \"\"\"Create a new Request with the same attributes except for those\n        given new values.\n        \"\"\"\n        return self.__class__(url=self.url if url is None else url,\n                              callback=callback,\n                              method=self.method if method is None else method,\n                              headers=copy.deepcopy(self.headers) if headers is None else headers,\n                              body=self.body if body is None else body,\n                              cookies=self.cookies if cookies is None else cookies,\n                              meta=self.meta if meta is None else meta,\n                              encoding=self.encoding if encoding is None else encoding,\n                              dont_filter=self.dont_filter if dont_filter is None else dont_filter)\n",
+          "file_after": "\"\"\"\nThis module implements the Request class which is used to represent HTTP\nrequests in Scrapy.\n\nSee documentation in docs/ref/request-response.rst\n\"\"\"\n\nimport copy\n\nfrom twisted.internet import defer\n\nfrom scrapy.http.url import Url\nfrom scrapy.http.headers import Headers\nfrom scrapy.utils.url import safe_url_string\n\nclass Request(object):\n\n    __slots__ = ['_encoding', 'method', '_url', '_body', '_meta', '_cache', \\\n        'dont_filter', 'headers', 'cookies', 'deferred', 'priority', \\\n        '__weakref__']\n\n    def __init__(self, url, callback=None, method='GET', headers=None, body=None, \n                 cookies=None, meta=None, encoding='utf-8', priority=0.0,\n                 dont_filter=False, errback=None):\n\n        self._encoding = encoding  # this one has to be set first\n        self.method = method.upper()\n        self._set_url(url)\n        self._set_body(body)\n        self.priority = priority\n\n        if callable(callback):\n            callback = defer.Deferred().addCallbacks(callback, errback)\n        self.deferred = callback or defer.Deferred()\n\n        self.cookies = cookies or {}\n        self.headers = Headers(headers or {}, encoding=encoding)\n        self.dont_filter = dont_filter\n\n        self._meta = dict(meta) if meta else None\n        self._cache = None\n\n    @property\n    def meta(self):\n        if self._meta is None:\n            self._meta = {}\n        return self._meta\n\n    @property\n    def cache(self):\n        if self._cache is None:\n            self._cache = {}\n        return self._cache\n\n    def _get_url(self):\n        return self._url\n\n    def _set_url(self, url):\n        if isinstance(url, basestring):\n            decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)\n            self._url = Url(safe_url_string(decoded_url, self.encoding))\n        elif isinstance(url, Url):\n            self._url = url\n        else:\n            raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)\n\n    url = property(_get_url, _set_url)\n\n    def _get_body(self):\n        return self._body\n\n    def _set_body(self, body):\n        if isinstance(body, str):\n            self._body = body\n        elif isinstance(body, unicode):\n            self._body = body.encode(self.encoding)\n        elif body is None:\n            self._body = ''\n        else:\n            raise TypeError(\"Request body must either str or unicode. Got: '%s'\" % type(body).__name__)\n\n    body = property(_get_body, _set_body)\n\n    @property\n    def encoding(self):\n        return self._encoding\n\n    def __str__(self):\n        if self.method == 'GET':\n            return \"<%s>\" % self.url\n        else:\n            return \"<%s %s>\" % (self.method, self.url)\n\n    def __repr__(self):\n        d = {\n            'method': self.method,\n            'url': self.url,\n            'headers': self.headers,\n            'body': self.body,\n            'cookies': self.cookies,\n            'meta': self.meta,\n            }\n        return \"%s(%s)\" % (self.__class__.__name__, repr(d))\n\n    def copy(self):\n        \"\"\"Return a copy of this Request\"\"\"\n        return self.replace()\n\n    def replace(self, url=None, callback=None, method=None, headers=None, body=None, \n                cookies=None, meta=None, encoding=None, dont_filter=None):\n        \"\"\"Create a new Request with the same attributes except for those\n        given new values.\n        \"\"\"\n        return self.__class__(url=self.url if url is None else url,\n                              callback=callback,\n                              method=self.method if method is None else method,\n                              headers=copy.deepcopy(self.headers) if headers is None else headers,\n                              body=self.body if body is None else body,\n                              cookies=self.cookies if cookies is None else cookies,\n                              meta=self.meta if meta is None else meta,\n                              encoding=self.encoding if encoding is None else encoding,\n                              dont_filter=self.dont_filter if dont_filter is None else dont_filter)\n",
+          "file_patch": "@@ -15,14 +15,18 @@ from scrapy.utils.url import safe_url_string\n \n class Request(object):\n \n+    __slots__ = ['_encoding', 'method', '_url', '_body', '_meta', '_cache', \\\n+        'dont_filter', 'headers', 'cookies', 'deferred', 'priority', \\\n+        '__weakref__']\n+\n     def __init__(self, url, callback=None, method='GET', headers=None, body=None, \n                  cookies=None, meta=None, encoding='utf-8', priority=0.0,\n                  dont_filter=False, errback=None):\n \n         self._encoding = encoding  # this one has to be set first\n         self.method = method.upper()\n-        self.set_url(url)\n-        self.set_body(body)\n+        self._set_url(url)\n+        self._set_body(body)\n         self.priority = priority\n \n         if callable(callback):\n@@ -33,10 +37,25 @@ class Request(object):\n         self.headers = Headers(headers or {}, encoding=encoding)\n         self.dont_filter = dont_filter\n \n-        self.meta = {} if meta is None else dict(meta)\n-        self.cache = {}\n-        \n-    def set_url(self, url):\n+        self._meta = dict(meta) if meta else None\n+        self._cache = None\n+\n+    @property\n+    def meta(self):\n+        if self._meta is None:\n+            self._meta = {}\n+        return self._meta\n+\n+    @property\n+    def cache(self):\n+        if self._cache is None:\n+            self._cache = {}\n+        return self._cache\n+\n+    def _get_url(self):\n+        return self._url\n+\n+    def _set_url(self, url):\n         if isinstance(url, basestring):\n             decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)\n             self._url = Url(safe_url_string(decoded_url, self.encoding))\n@@ -44,9 +63,13 @@ class Request(object):\n             self._url = url\n         else:\n             raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)\n-    url = property(lambda x: x._url, set_url)\n \n-    def set_body(self, body):\n+    url = property(_get_url, _set_url)\n+\n+    def _get_body(self):\n+        return self._body\n+\n+    def _set_body(self, body):\n         if isinstance(body, str):\n             self._body = body\n         elif isinstance(body, unicode):\n@@ -55,7 +78,8 @@ class Request(object):\n             self._body = ''\n         else:\n             raise TypeError(\"Request body must either str or unicode. Got: '%s'\" % type(body).__name__)\n-    body = property(lambda x: x._body, set_body)\n+\n+    body = property(_get_body, _set_body)\n \n     @property\n     def encoding(self):\n",
+          "files_name_in_blame_commit": [
+            "__init__.py",
+            "text.py",
+            "headers.py"
+          ]
+        }
+      },
+      "0c9631594d8e3d2e1917e2d46ec67afcf719d1bf": {
+        "commit": {
+          "commit_id": "0c9631594d8e3d2e1917e2d46ec67afcf719d1bf",
+          "commit_message": "- made Request.copy() use Request.replace()\n- added callback, dont_filter, encoding to Request copy/replace\n- fixed Request.replace() and Response.replace() which weren't working properly with empty arguments\n- added new test cases\n- added doc about copying requests and deferreds\n\n--HG--\nextra : convert_revision : svn%3Ab85faa78-f9eb-468e-a121-7cced6da292c%401012",
+          "commit_author": "Pablo Hoffman",
+          "commit_date": "2009-03-24 20:02:42",
+          "commit_parent": "03fc6fc4774c7cf03daeeb6933c6f434ef7e6028"
+        },
+        "function": {
+          "function_name": "_set_url",
+          "function_code_before": "",
+          "function_code_after": "",
+          "function_before_start_line": "",
+          "function_before_end_line": "",
+          "function_after_start_line": "",
+          "function_after_end_line": "",
+          "function_before_token_count": 0,
+          "function_after_token_count": 0,
+          "functions_name_modified_file": [
+            "__init__",
+            "set_url",
+            "copy",
+            "httprepr",
+            "__str__",
+            "set_body",
+            "replace",
+            "__repr__",
+            "encoding"
+          ],
+          "functions_name_all_files": [
+            "set_url",
+            "test_httprepr",
+            "test_custom_encoding",
+            "test_eq",
+            "set_body",
+            "httprepr",
+            "test_copy_inherited_classes",
+            "test_empty_formdata",
+            "test_encoding",
+            "test_url",
+            "_assert_response_values",
+            "test_xml_encoding",
+            "test_init",
+            "test_copy",
+            "test_replace",
+            "test_headers",
+            "test_default_encoding",
+            "__str__",
+            "replace",
+            "__repr__",
+            "encoding",
+            "__init__",
+            "test_basic",
+            "test_multi_key_values",
+            "copy",
+            "test_html_encoding",
+            "test_text_response",
+            "test_body"
+          ],
+          "functions_name_co_evolved_modified_file": [
+            "replace",
+            "set_url",
+            "__init__",
+            "copy"
+          ],
+          "functions_name_co_evolved_all_files": [
+            "__init__",
+            "set_url",
+            "test_init",
+            "copy",
+            "test_copy",
+            "test_replace",
+            "replace"
+          ]
+        },
+        "file": {
+          "file_name": "__init__.py",
+          "file_nloc": 86,
+          "file_complexity": 30,
+          "file_token_count": 690,
+          "file_before": "\"\"\"\nThis module implements the Request class which is used to represent HTTP\nrequests in Scrapy.\n\nSee documentation in docs/ref/request-response.rst\n\"\"\"\n\nimport urllib\nimport copy\n\nfrom twisted.internet import defer\n\nfrom scrapy.http.url import Url\nfrom scrapy.http.headers import Headers\nfrom scrapy.utils.url import safe_url_string\nfrom scrapy.utils.defer import chain_deferred\n\nclass Request(object):\n\n    def __init__(self, url, callback=None, method='GET', headers=None, body=None, \n                 cookies=None, meta=None, encoding='utf-8', dont_filter=None):\n\n        self._encoding = encoding  # this one has to be set first\n        self.method = method.upper()\n        self.set_url(url)\n        self.set_body(body)\n\n        if callable(callback):\n            callback = defer.Deferred().addCallback(callback)\n        self.deferred = callback or defer.Deferred()\n\n        self.cookies = cookies or {}\n        self.headers = Headers(headers or {}, encoding=encoding)\n        self.dont_filter = dont_filter\n\n        self.meta = {} if meta is None else dict(meta)\n        self.cache = {}\n        \n    def set_url(self, url):\n        assert isinstance(url, basestring), \\\n            'Request url argument must be str or unicode, got %s:' % type(url).__name__\n        decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)\n        self._url = Url(safe_url_string(decoded_url, self.encoding))\n    url = property(lambda x: x._url, set_url)\n\n    def set_body(self, body):\n        if isinstance(body, str):\n            self._body = body\n        elif isinstance(body, unicode):\n            self._body = body.encode(self.encoding)\n        elif body is None:\n            self._body = ''\n        else:\n            raise TypeError(\"Request body must either str or unicode. Got: '%s'\" % type(body).__name__)\n    body = property(lambda x: x._body, set_body)\n\n    @property\n    def encoding(self):\n        return self._encoding\n\n    def __str__(self):\n        if self.method == 'GET':\n            return \"<%s>\" % self.url\n        else:\n            return \"<%s %s>\" % (self.method, self.url)\n\n    def __repr__(self):\n        d = {\n            'method': self.method,\n            'url': self.url,\n            'headers': self.headers,\n            'body': self.body,\n            'cookies': self.cookies,\n            'meta': self.meta,\n            }\n        return \"%s(%s)\" % (self.__class__.__name__, repr(d))\n\n    def copy(self):\n        \"\"\"Return a copy a of this Request\"\"\"\n        new = copy.copy(self)\n        new.cache = {}\n        for att in self.__dict__:\n            if att not in ['cache', 'url', 'deferred']:\n                value = getattr(self, att)\n                setattr(new, att, copy.copy(value))\n        new.deferred = defer.Deferred()\n        return new\n\n    def replace(self, url=None, method=None, headers=None, body=None, cookies=None, meta=None):\n        \"\"\"Create a new Request with the same attributes except for those\n        given new values.\n        \"\"\"\n        return self.__class__(url=url or self.url,\n                              method=method or self.method,\n                              headers=headers or copy.deepcopy(self.headers),\n                              body=body or self.body,\n                              cookies=cookies or self.cookies,\n                              meta=meta or self.meta)\n\n    def httprepr(self):\n        \"\"\" Return raw HTTP request representation (as string). This is\n        provided only for reference since it's not the actual stream of bytes\n        that will be send when performing the request (that's controlled by\n        Twisted).\n        \"\"\"\n\n        s  = \"%s %s HTTP/1.1\\r\\n\" % (self.method, self.url)\n        s += \"Host: %s\\r\\n\" % self.url.hostname\n        if self.headers:\n            s += self.headers.to_string() + \"\\r\\n\"\n        s += \"\\r\\n\"\n        s += self.body\n        return s\n",
+          "file_after": "\"\"\"\nThis module implements the Request class which is used to represent HTTP\nrequests in Scrapy.\n\nSee documentation in docs/ref/request-response.rst\n\"\"\"\n\nimport urllib\nimport copy\n\nfrom twisted.internet import defer\n\nfrom scrapy.http.url import Url\nfrom scrapy.http.headers import Headers\nfrom scrapy.utils.url import safe_url_string\nfrom scrapy.utils.defer import chain_deferred\n\nclass Request(object):\n\n    def __init__(self, url, callback=None, method='GET', headers=None, body=None, \n                 cookies=None, meta=None, encoding='utf-8', dont_filter=False):\n\n        self._encoding = encoding  # this one has to be set first\n        self.method = method.upper()\n        self.set_url(url)\n        self.set_body(body)\n\n        if callable(callback):\n            callback = defer.Deferred().addCallback(callback)\n        self.deferred = callback or defer.Deferred()\n\n        self.cookies = cookies or {}\n        self.headers = Headers(headers or {}, encoding=encoding)\n        self.dont_filter = dont_filter\n\n        self.meta = {} if meta is None else dict(meta)\n        self.cache = {}\n        \n    def set_url(self, url):\n        if isinstance(url, basestring):\n            decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)\n            self._url = Url(safe_url_string(decoded_url, self.encoding))\n        elif isinstance(url, Url):\n            self._url = url\n        else:\n            raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)\n    url = property(lambda x: x._url, set_url)\n\n    def set_body(self, body):\n        if isinstance(body, str):\n            self._body = body\n        elif isinstance(body, unicode):\n            self._body = body.encode(self.encoding)\n        elif body is None:\n            self._body = ''\n        else:\n            raise TypeError(\"Request body must either str or unicode. Got: '%s'\" % type(body).__name__)\n    body = property(lambda x: x._body, set_body)\n\n    @property\n    def encoding(self):\n        return self._encoding\n\n    def __str__(self):\n        if self.method == 'GET':\n            return \"<%s>\" % self.url\n        else:\n            return \"<%s %s>\" % (self.method, self.url)\n\n    def __repr__(self):\n        d = {\n            'method': self.method,\n            'url': self.url,\n            'headers': self.headers,\n            'body': self.body,\n            'cookies': self.cookies,\n            'meta': self.meta,\n            }\n        return \"%s(%s)\" % (self.__class__.__name__, repr(d))\n\n    def copy(self):\n        \"\"\"Return a copy of this Request\"\"\"\n        return self.replace()\n\n    def replace(self, url=None, callback=None, method=None, headers=None, body=None, \n                cookies=None, meta=None, encoding=None, dont_filter=None):\n        \"\"\"Create a new Request with the same attributes except for those\n        given new values.\n        \"\"\"\n        return self.__class__(url=self.url if url is None else self.url,\n                              callback=callback,\n                              method=self.method if method is None else method,\n                              headers=copy.deepcopy(self.headers) if headers is None else headers,\n                              body=self.body if body is None else body,\n                              cookies=self.cookies if cookies is None else cookies,\n                              meta=self.meta if meta is None else meta,\n                              encoding=self.encoding if encoding is None else encoding,\n                              dont_filter=self.dont_filter if dont_filter is None else dont_filter)\n\n    def httprepr(self):\n        \"\"\" Return raw HTTP request representation (as string). This is\n        provided only for reference since it's not the actual stream of bytes\n        that will be send when performing the request (that's controlled by\n        Twisted).\n        \"\"\"\n\n        s  = \"%s %s HTTP/1.1\\r\\n\" % (self.method, self.url)\n        s += \"Host: %s\\r\\n\" % self.url.hostname\n        if self.headers:\n            s += self.headers.to_string() + \"\\r\\n\"\n        s += \"\\r\\n\"\n        s += self.body\n        return s\n",
+          "file_patch": "@@ -18,7 +18,7 @@ from scrapy.utils.defer import chain_deferred\n class Request(object):\n \n     def __init__(self, url, callback=None, method='GET', headers=None, body=None, \n-                 cookies=None, meta=None, encoding='utf-8', dont_filter=None):\n+                 cookies=None, meta=None, encoding='utf-8', dont_filter=False):\n \n         self._encoding = encoding  # this one has to be set first\n         self.method = method.upper()\n@@ -37,10 +37,13 @@ class Request(object):\n         self.cache = {}\n         \n     def set_url(self, url):\n-        assert isinstance(url, basestring), \\\n-            'Request url argument must be str or unicode, got %s:' % type(url).__name__\n-        decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)\n-        self._url = Url(safe_url_string(decoded_url, self.encoding))\n+        if isinstance(url, basestring):\n+            decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)\n+            self._url = Url(safe_url_string(decoded_url, self.encoding))\n+        elif isinstance(url, Url):\n+            self._url = url\n+        else:\n+            raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)\n     url = property(lambda x: x._url, set_url)\n \n     def set_body(self, body):\n@@ -76,26 +79,23 @@ class Request(object):\n         return \"%s(%s)\" % (self.__class__.__name__, repr(d))\n \n     def copy(self):\n-        \"\"\"Return a copy a of this Request\"\"\"\n-        new = copy.copy(self)\n-        new.cache = {}\n-        for att in self.__dict__:\n-            if att not in ['cache', 'url', 'deferred']:\n-                value = getattr(self, att)\n-                setattr(new, att, copy.copy(value))\n-        new.deferred = defer.Deferred()\n-        return new\n-\n-    def replace(self, url=None, method=None, headers=None, body=None, cookies=None, meta=None):\n+        \"\"\"Return a copy of this Request\"\"\"\n+        return self.replace()\n+\n+    def replace(self, url=None, callback=None, method=None, headers=None, body=None, \n+                cookies=None, meta=None, encoding=None, dont_filter=None):\n         \"\"\"Create a new Request with the same attributes except for those\n         given new values.\n         \"\"\"\n-        return self.__class__(url=url or self.url,\n-                              method=method or self.method,\n-                              headers=headers or copy.deepcopy(self.headers),\n-                              body=body or self.body,\n-                              cookies=cookies or self.cookies,\n-                              meta=meta or self.meta)\n+        return self.__class__(url=self.url if url is None else self.url,\n+                              callback=callback,\n+                              method=self.method if method is None else method,\n+                              headers=copy.deepcopy(self.headers) if headers is None else headers,\n+                              body=self.body if body is None else body,\n+                              cookies=self.cookies if cookies is None else cookies,\n+                              meta=self.meta if meta is None else meta,\n+                              encoding=self.encoding if encoding is None else encoding,\n+                              dont_filter=self.dont_filter if dont_filter is None else dont_filter)\n \n     def httprepr(self):\n         \"\"\" Return raw HTTP request representation (as string). This is\n",
+          "files_name_in_blame_commit": [
+            "test_http_response.py",
+            "__init__.py",
+            "test_http_request.py"
+          ]
+        }
+      }
+    }
+  }
+}

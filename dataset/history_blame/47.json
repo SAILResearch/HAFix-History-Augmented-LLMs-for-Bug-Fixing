@@ -1,0 +1,94 @@
+{
+  "id": "47",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "dee018e79279592d2eef38302ac113125b5953f3",
+      "commit_message": "#N/A Move `get_all_executables` (formerly `get_all_callables`) to `utils`",
+      "commit_author": "nvbn",
+      "commit_date": "2015-07-20 21:04:49",
+      "commit_parent": "c67560864adcd43828a099afa9be7bf264623f0a"
+    },
+    "function": {
+      "function_name": "get_all_executables",
+      "function_code_before": "",
+      "function_code_after": "@memoize\ndef get_all_executables():\n    from thefuck.shells import thefuck_alias, get_aliases\n\n    def _safe(fn, fallback):\n        try:\n            return fn()\n        except OSError:\n            return fallback\n    tf_alias = thefuck_alias()\n    return [exe.name for path in os.environ.get('PATH', '').split(':') for exe in _safe(lambda : list(Path(path).iterdir()), []) if not _safe(exe.is_dir, True)] + [alias for alias in get_aliases() if alias != tf_alias]",
+      "function_before_start_line": "",
+      "function_before_end_line": "",
+      "function_after_start_line": 128,
+      "function_after_end_line": 142,
+      "function_before_token_count": 0,
+      "function_after_token_count": 89,
+      "functions_name_modified_file": [
+        "which",
+        "wrap_settings",
+        "git_support",
+        "get_all_executables",
+        "memoize",
+        "get_closest",
+        "sudo_support"
+      ],
+      "functions_name_all_files": [
+        "test_sudo_support",
+        "get_new_command",
+        "test_when_can_match",
+        "test_match",
+        "git_support",
+        "match",
+        "test_without_fallback",
+        "test_get_all_callables",
+        "get_closest",
+        "test_when_cant_match",
+        "get_aliases",
+        "_history_of_exists_without_current",
+        "sudo_support",
+        "test_wrap_settings",
+        "get_all_executables",
+        "alias",
+        "history",
+        "test_memoize",
+        "which",
+        "wrap_settings",
+        "callables",
+        "_not_corrected",
+        "test_get_new_command",
+        "memoize",
+        "test_no_memoize",
+        "test_not_match"
+      ],
+      "functions_name_co_evolved_modified_file": [],
+      "functions_name_co_evolved_all_files": [
+        "_safe",
+        "test_get_new_command",
+        "get_new_command",
+        "test_match",
+        "get_all_callables",
+        "callables",
+        "match",
+        "test_get_all_callables",
+        "get_aliases",
+        "_history_of_exists_without_current"
+      ]
+    },
+    "file": {
+      "file_name": "utils.py",
+      "file_nloc": 93,
+      "file_complexity": 34,
+      "file_token_count": 641,
+      "file_before": "from difflib import get_close_matches\nfrom functools import wraps\nfrom shlex import split\nimport os\nimport pickle\nimport re\nimport six\nfrom .types import Command\n\n\nDEVNULL = open(os.devnull, 'w')\n\nif six.PY2:\n    from pipes import quote\nelse:\n    from shlex import quote\n\n\ndef which(program):\n    \"\"\"Returns `program` path or `None`.\"\"\"\n\n    def is_exe(fpath):\n        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)\n\n    fpath, fname = os.path.split(program)\n    if fpath:\n        if is_exe(program):\n            return program\n    else:\n        for path in os.environ[\"PATH\"].split(os.pathsep):\n            path = path.strip('\"')\n            exe_file = os.path.join(path, program)\n            if is_exe(exe_file):\n                return exe_file\n\n    return None\n\n\ndef wrap_settings(params):\n    \"\"\"Adds default values to settings if it not presented.\n\n    Usage:\n\n        @wrap_settings({'apt': '/usr/bin/apt'})\n        def match(command, settings):\n            print(settings.apt)\n\n    \"\"\"\n    def decorator(fn):\n        @wraps(fn)\n        def wrapper(command, settings):\n            return fn(command, settings.update(**params))\n        return wrapper\n    return decorator\n\n\ndef sudo_support(fn):\n    \"\"\"Removes sudo before calling fn and adds it after.\"\"\"\n    @wraps(fn)\n    def wrapper(command, settings):\n        if not command.script.startswith('sudo '):\n            return fn(command, settings)\n\n        result = fn(Command(command.script[5:],\n                            command.stdout,\n                            command.stderr),\n                    settings)\n\n        if result and isinstance(result, six.string_types):\n            return u'sudo {}'.format(result)\n        else:\n            return result\n    return wrapper\n\n\ndef git_support(fn):\n    \"\"\"Resolve git aliases.\"\"\"\n    @wraps(fn)\n    def wrapper(command, settings):\n        if (command.script.startswith('git') and\n                'trace: alias expansion:' in command.stderr):\n\n            search = re.search(\"trace: alias expansion: ([^ ]*) => ([^\\n]*)\",\n                               command.stderr)\n            alias = search.group(1)\n\n            # by default git quotes everything, for example:\n            #     'commit' '--amend'\n            # which is surprising and does not allow to easily test for\n            # eg. 'git commit'\n            expansion = ' '.join(map(quote, split(search.group(2))))\n            new_script = command.script.replace(alias, expansion)\n\n            command = Command._replace(command, script=new_script)\n        return fn(command, settings)\n\n    return wrapper\n\n\ndef memoize(fn):\n    \"\"\"Caches previous calls to the function.\"\"\"\n    memo = {}\n\n    @wraps(fn)\n    def wrapper(*args, **kwargs):\n        key = pickle.dumps((args, kwargs))\n        if key not in memo or memoize.disabled:\n            memo[key] = fn(*args, **kwargs)\n\n        return memo[key]\n\n    return wrapper\nmemoize.disabled = False\n\n\ndef get_closest(word, possibilities, n=3, cutoff=0.6, fallback_to_first=True):\n    \"\"\"Returns closest match or just first from possibilities.\"\"\"\n    possibilities = list(possibilities)\n    try:\n        return get_close_matches(word, possibilities, n, cutoff)[0]\n    except IndexError:\n        if fallback_to_first:\n            return possibilities[0]\n",
+      "file_after": "from difflib import get_close_matches\nfrom functools import wraps\nfrom pathlib import Path\nfrom shlex import split\nimport os\nimport pickle\nimport re\nimport six\nfrom .types import Command\n\n\nDEVNULL = open(os.devnull, 'w')\n\nif six.PY2:\n    from pipes import quote\nelse:\n    from shlex import quote\n\n\ndef which(program):\n    \"\"\"Returns `program` path or `None`.\"\"\"\n\n    def is_exe(fpath):\n        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)\n\n    fpath, fname = os.path.split(program)\n    if fpath:\n        if is_exe(program):\n            return program\n    else:\n        for path in os.environ[\"PATH\"].split(os.pathsep):\n            path = path.strip('\"')\n            exe_file = os.path.join(path, program)\n            if is_exe(exe_file):\n                return exe_file\n\n    return None\n\n\ndef wrap_settings(params):\n    \"\"\"Adds default values to settings if it not presented.\n\n    Usage:\n\n        @wrap_settings({'apt': '/usr/bin/apt'})\n        def match(command, settings):\n            print(settings.apt)\n\n    \"\"\"\n    def decorator(fn):\n        @wraps(fn)\n        def wrapper(command, settings):\n            return fn(command, settings.update(**params))\n        return wrapper\n    return decorator\n\n\ndef sudo_support(fn):\n    \"\"\"Removes sudo before calling fn and adds it after.\"\"\"\n    @wraps(fn)\n    def wrapper(command, settings):\n        if not command.script.startswith('sudo '):\n            return fn(command, settings)\n\n        result = fn(Command(command.script[5:],\n                            command.stdout,\n                            command.stderr),\n                    settings)\n\n        if result and isinstance(result, six.string_types):\n            return u'sudo {}'.format(result)\n        else:\n            return result\n    return wrapper\n\n\ndef git_support(fn):\n    \"\"\"Resolve git aliases.\"\"\"\n    @wraps(fn)\n    def wrapper(command, settings):\n        if (command.script.startswith('git') and\n                'trace: alias expansion:' in command.stderr):\n\n            search = re.search(\"trace: alias expansion: ([^ ]*) => ([^\\n]*)\",\n                               command.stderr)\n            alias = search.group(1)\n\n            # by default git quotes everything, for example:\n            #     'commit' '--amend'\n            # which is surprising and does not allow to easily test for\n            # eg. 'git commit'\n            expansion = ' '.join(map(quote, split(search.group(2))))\n            new_script = command.script.replace(alias, expansion)\n\n            command = Command._replace(command, script=new_script)\n        return fn(command, settings)\n\n    return wrapper\n\n\ndef memoize(fn):\n    \"\"\"Caches previous calls to the function.\"\"\"\n    memo = {}\n\n    @wraps(fn)\n    def wrapper(*args, **kwargs):\n        key = pickle.dumps((args, kwargs))\n        if key not in memo or memoize.disabled:\n            memo[key] = fn(*args, **kwargs)\n\n        return memo[key]\n\n    return wrapper\nmemoize.disabled = False\n\n\ndef get_closest(word, possibilities, n=3, cutoff=0.6, fallback_to_first=True):\n    \"\"\"Returns closest match or just first from possibilities.\"\"\"\n    possibilities = list(possibilities)\n    try:\n        return get_close_matches(word, possibilities, n, cutoff)[0]\n    except IndexError:\n        if fallback_to_first:\n            return possibilities[0]\n\n\n@memoize\ndef get_all_executables():\n    from thefuck.shells import thefuck_alias, get_aliases\n\n    def _safe(fn, fallback):\n        try:\n            return fn()\n        except OSError:\n            return fallback\n\n    tf_alias = thefuck_alias()\n    return [exe.name\n            for path in os.environ.get('PATH', '').split(':')\n            for exe in _safe(lambda: list(Path(path).iterdir()), [])\n            if not _safe(exe.is_dir, True)] + [\n                alias for alias in get_aliases() if alias != tf_alias]\n",
+      "file_patch": "@@ -1,5 +1,6 @@\n from difflib import get_close_matches\n from functools import wraps\n+from pathlib import Path\n from shlex import split\n import os\n import pickle\n@@ -121,3 +122,21 @@ def get_closest(word, possibilities, n=3, cutoff=0.6, fallback_to_first=True):\n     except IndexError:\n         if fallback_to_first:\n             return possibilities[0]\n+\n+\n+@memoize\n+def get_all_executables():\n+    from thefuck.shells import thefuck_alias, get_aliases\n+\n+    def _safe(fn, fallback):\n+        try:\n+            return fn()\n+        except OSError:\n+            return fallback\n+\n+    tf_alias = thefuck_alias()\n+    return [exe.name\n+            for path in os.environ.get('PATH', '').split(':')\n+            for exe in _safe(lambda: list(Path(path).iterdir()), [])\n+            if not _safe(exe.is_dir, True)] + [\n+                alias for alias in get_aliases() if alias != tf_alias]\n",
+      "files_name_in_blame_commit": [
+        "test_no_command.py",
+        "test_history.py",
+        "test_utils.py",
+        "utils.py",
+        "no_command.py",
+        "history.py"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 79
+  },
+  "recursive_blame_commits": {}
+}

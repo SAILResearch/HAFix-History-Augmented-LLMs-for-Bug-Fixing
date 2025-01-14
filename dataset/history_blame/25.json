@@ -1,0 +1,83 @@
+{
+  "id": "25",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "7130df2d96836467c33f87196699076f159df9f0",
+      "commit_message": "improvements to scrapy check/contracts\n\n* report number of contracts run and time spent (similar to unittest)\n* exit with code 1 if there are failures (similar to unittest)\n* capture and report errback errors (twisted or mw errors)\n* capture and report callback errors (exceptions raised by spider)",
+      "commit_author": "Alex Cepoi",
+      "commit_date": "2014-06-03 14:51:25",
+      "commit_parent": "8a1c67fdaad763ffe74af07cd886956f40a3825f"
+    },
+    "function": {
+      "function_name": "_clean_req",
+      "function_code_before": "",
+      "function_code_after": "def _clean_req(self, request, method, results):\n    \"\"\" stop the request from returning objects and records any errors \"\"\"\n    cb = request.callback\n\n    @wraps(cb)\n    def cb_wrapper(response):\n        try:\n            output = cb(response)\n            output = list(iterate_spider_output(output))\n        except:\n            case = _create_testcase(method, 'callback')\n            results.addError(case, sys.exc_info())\n\n    def eb_wrapper(failure):\n        case = _create_testcase(method, 'errback')\n        exc_info = (failure.value, failure.type, failure.getTracebackObject())\n        results.addError(case, exc_info)\n    request.callback = cb_wrapper\n    request.errback = eb_wrapper",
+      "function_before_start_line": "",
+      "function_before_end_line": "",
+      "function_after_start_line": 54,
+      "function_after_end_line": 74,
+      "function_before_token_count": 0,
+      "function_after_token_count": 36,
+      "functions_name_modified_file": [
+        "__init__",
+        "from_method",
+        "_clean_req",
+        "add_pre_hook",
+        "add_post_hook",
+        "adjust_request_args",
+        "_create_testcase",
+        "extract_contracts"
+      ],
+      "functions_name_all_files": [
+        "__init__",
+        "from_method",
+        "adjust_request_args",
+        "get_requests",
+        "_clean_req",
+        "add_options",
+        "add_pre_hook",
+        "add_post_hook",
+        "run",
+        "printSummary",
+        "short_desc",
+        "_create_testcase",
+        "extract_contracts",
+        "syntax"
+      ],
+      "functions_name_co_evolved_modified_file": [
+        "__init__",
+        "from_method",
+        "_create_testcase",
+        "create_testcase"
+      ],
+      "functions_name_co_evolved_all_files": [
+        "__init__",
+        "_generate",
+        "printSummary",
+        "from_method",
+        "get_requests",
+        "create_testcase",
+        "run",
+        "add_options",
+        "_create_testcase"
+      ]
+    },
+    "file": {
+      "file_name": "__init__.py",
+      "file_nloc": 108,
+      "file_complexity": 31,
+      "file_token_count": 764,
+      "file_before": "import sys\nimport re\nfrom functools import wraps\nfrom unittest import TestCase\n\nfrom scrapy.http import Request\nfrom scrapy.utils.spider import iterate_spider_output\nfrom scrapy.utils.python import get_spec\n\n\nclass ContractsManager(object):\n    contracts = {}\n\n    def __init__(self, contracts):\n        for contract in contracts:\n            self.contracts[contract.name] = contract\n\n    def extract_contracts(self, method):\n        contracts = []\n        for line in method.__doc__.split('\\n'):\n            line = line.strip()\n\n            if line.startswith('@'):\n                name, args = re.match(r'@(\\w+)\\s*(.*)', line).groups()\n                args = re.split(r'\\s+', args)\n\n                contracts.append(self.contracts[name](method, *args))\n\n        return contracts\n\n    def from_method(self, method, results):\n        contracts = self.extract_contracts(method)\n        if contracts:\n            # calculate request args\n            args, kwargs = get_spec(Request.__init__)\n            kwargs['callback'] = method\n            for contract in contracts:\n                kwargs = contract.adjust_request_args(kwargs)\n\n            # create and prepare request\n            args.remove('self')\n            if set(args).issubset(set(kwargs)):\n                request = Request(**kwargs)\n\n                # execute pre and post hooks in order\n                for contract in reversed(contracts):\n                    request = contract.add_pre_hook(request, results)\n                for contract in contracts:\n                    request = contract.add_post_hook(request, results)\n\n                return request\n\n\nclass Contract(object):\n    \"\"\" Abstract class for contracts \"\"\"\n\n    def __init__(self, method, *args):\n        self.testcase_pre = self.create_testcase(method, 'pre-hook')\n        self.testcase_post = self.create_testcase(method, 'post-hook')\n        self.args = args\n\n    def create_testcase(self, method, hook):\n        spider = method.__self__.name\n\n        class ContractTestCase(TestCase):\n            def __str__(_self):\n                return \"[%s] %s (@%s %s)\" % (spider, method.__name__, self.name, hook)\n\n        name = '%s_%s' % (spider, method.__name__)\n        setattr(ContractTestCase, name, lambda x: x)\n        return ContractTestCase(name)\n\n    def add_pre_hook(self, request, results):\n        if hasattr(self, 'pre_process'):\n            cb = request.callback\n\n            @wraps(cb)\n            def wrapper(response):\n                try:\n                    results.startTest(self.testcase_pre)\n                    self.pre_process(response)\n                    results.stopTest(self.testcase_pre)\n                except AssertionError:\n                    results.addFailure(self.testcase_pre, sys.exc_info())\n                except Exception:\n                    results.addError(self.testcase_pre, sys.exc_info())\n                else:\n                    results.addSuccess(self.testcase_pre)\n                finally:\n                    return list(iterate_spider_output(cb(response)))\n\n            request.callback = wrapper\n\n        return request\n\n    def add_post_hook(self, request, results):\n        if hasattr(self, 'post_process'):\n            cb = request.callback\n\n            @wraps(cb)\n            def wrapper(response):\n                output = list(iterate_spider_output(cb(response)))\n                try:\n                    results.startTest(self.testcase_post)\n                    self.post_process(output)\n                    results.stopTest(self.testcase_post)\n                except AssertionError:\n                    results.addFailure(self.testcase_post, sys.exc_info())\n                except Exception:\n                    results.addError(self.testcase_post, sys.exc_info())\n                else:\n                    results.addSuccess(self.testcase_post)\n                finally:\n                    return output\n\n            request.callback = wrapper\n\n        return request\n\n    def adjust_request_args(self, args):\n        return args\n",
+      "file_after": "import sys\nimport re\nfrom functools import wraps\nfrom unittest import TestCase\n\nfrom scrapy.http import Request\nfrom scrapy.utils.spider import iterate_spider_output\nfrom scrapy.utils.python import get_spec\n\n\nclass ContractsManager(object):\n    contracts = {}\n\n    def __init__(self, contracts):\n        for contract in contracts:\n            self.contracts[contract.name] = contract\n\n    def extract_contracts(self, method):\n        contracts = []\n        for line in method.__doc__.split('\\n'):\n            line = line.strip()\n\n            if line.startswith('@'):\n                name, args = re.match(r'@(\\w+)\\s*(.*)', line).groups()\n                args = re.split(r'\\s+', args)\n\n                contracts.append(self.contracts[name](method, *args))\n\n        return contracts\n\n    def from_method(self, method, results):\n        contracts = self.extract_contracts(method)\n        if contracts:\n            # calculate request args\n            args, kwargs = get_spec(Request.__init__)\n            kwargs['callback'] = method\n            for contract in contracts:\n                kwargs = contract.adjust_request_args(kwargs)\n\n            # create and prepare request\n            args.remove('self')\n            if set(args).issubset(set(kwargs)):\n                request = Request(**kwargs)\n\n                # execute pre and post hooks in order\n                for contract in reversed(contracts):\n                    request = contract.add_pre_hook(request, results)\n                for contract in contracts:\n                    request = contract.add_post_hook(request, results)\n\n                self._clean_req(request, method, results)\n                return request\n\n    def _clean_req(self, request, method, results):\n        \"\"\" stop the request from returning objects and records any errors \"\"\"\n\n        cb = request.callback\n\n        @wraps(cb)\n        def cb_wrapper(response):\n            try:\n                output = cb(response)\n                output = list(iterate_spider_output(output))\n            except:\n                case = _create_testcase(method, 'callback')\n                results.addError(case, sys.exc_info())\n\n        def eb_wrapper(failure):\n            case = _create_testcase(method, 'errback')\n            exc_info = failure.value, failure.type, failure.getTracebackObject()\n            results.addError(case, exc_info)\n\n        request.callback = cb_wrapper\n        request.errback = eb_wrapper\n\n\nclass Contract(object):\n    \"\"\" Abstract class for contracts \"\"\"\n\n    def __init__(self, method, *args):\n        self.testcase_pre = _create_testcase(method, '@%s pre-hook' % self.name)\n        self.testcase_post = _create_testcase(method, '@%s post-hook' % self.name)\n        self.args = args\n\n    def add_pre_hook(self, request, results):\n        if hasattr(self, 'pre_process'):\n            cb = request.callback\n\n            @wraps(cb)\n            def wrapper(response):\n                try:\n                    results.startTest(self.testcase_pre)\n                    self.pre_process(response)\n                    results.stopTest(self.testcase_pre)\n                except AssertionError:\n                    results.addFailure(self.testcase_pre, sys.exc_info())\n                except Exception:\n                    results.addError(self.testcase_pre, sys.exc_info())\n                else:\n                    results.addSuccess(self.testcase_pre)\n                finally:\n                    return list(iterate_spider_output(cb(response)))\n\n            request.callback = wrapper\n\n        return request\n\n    def add_post_hook(self, request, results):\n        if hasattr(self, 'post_process'):\n            cb = request.callback\n\n            @wraps(cb)\n            def wrapper(response):\n                output = list(iterate_spider_output(cb(response)))\n                try:\n                    results.startTest(self.testcase_post)\n                    self.post_process(output)\n                    results.stopTest(self.testcase_post)\n                except AssertionError:\n                    results.addFailure(self.testcase_post, sys.exc_info())\n                except Exception:\n                    results.addError(self.testcase_post, sys.exc_info())\n                else:\n                    results.addSuccess(self.testcase_post)\n                finally:\n                    return output\n\n            request.callback = wrapper\n\n        return request\n\n    def adjust_request_args(self, args):\n        return args\n\n\ndef _create_testcase(method, desc):\n    spider = method.__self__.name\n\n    class ContractTestCase(TestCase):\n        def __str__(_self):\n            return \"[%s] %s (%s)\" % (spider, method.__name__, desc)\n\n    name = '%s_%s' % (spider, method.__name__)\n    setattr(ContractTestCase, name, lambda x: x)\n    return ContractTestCase(name)\n",
+      "file_patch": "@@ -48,28 +48,40 @@ class ContractsManager(object):\n                 for contract in contracts:\n                     request = contract.add_post_hook(request, results)\n \n+                self._clean_req(request, method, results)\n                 return request\n \n+    def _clean_req(self, request, method, results):\n+        \"\"\" stop the request from returning objects and records any errors \"\"\"\n+\n+        cb = request.callback\n+\n+        @wraps(cb)\n+        def cb_wrapper(response):\n+            try:\n+                output = cb(response)\n+                output = list(iterate_spider_output(output))\n+            except:\n+                case = _create_testcase(method, 'callback')\n+                results.addError(case, sys.exc_info())\n+\n+        def eb_wrapper(failure):\n+            case = _create_testcase(method, 'errback')\n+            exc_info = failure.value, failure.type, failure.getTracebackObject()\n+            results.addError(case, exc_info)\n+\n+        request.callback = cb_wrapper\n+        request.errback = eb_wrapper\n+\n \n class Contract(object):\n     \"\"\" Abstract class for contracts \"\"\"\n \n     def __init__(self, method, *args):\n-        self.testcase_pre = self.create_testcase(method, 'pre-hook')\n-        self.testcase_post = self.create_testcase(method, 'post-hook')\n+        self.testcase_pre = _create_testcase(method, '@%s pre-hook' % self.name)\n+        self.testcase_post = _create_testcase(method, '@%s post-hook' % self.name)\n         self.args = args\n \n-    def create_testcase(self, method, hook):\n-        spider = method.__self__.name\n-\n-        class ContractTestCase(TestCase):\n-            def __str__(_self):\n-                return \"[%s] %s (@%s %s)\" % (spider, method.__name__, self.name, hook)\n-\n-        name = '%s_%s' % (spider, method.__name__)\n-        setattr(ContractTestCase, name, lambda x: x)\n-        return ContractTestCase(name)\n-\n     def add_pre_hook(self, request, results):\n         if hasattr(self, 'pre_process'):\n             cb = request.callback\n@@ -119,3 +131,15 @@ class Contract(object):\n \n     def adjust_request_args(self, args):\n         return args\n+\n+\n+def _create_testcase(method, desc):\n+    spider = method.__self__.name\n+\n+    class ContractTestCase(TestCase):\n+        def __str__(_self):\n+            return \"[%s] %s (%s)\" % (spider, method.__name__, desc)\n+\n+    name = '%s_%s' % (spider, method.__name__)\n+    setattr(ContractTestCase, name, lambda x: x)\n+    return ContractTestCase(name)\n",
+      "files_name_in_blame_commit": [
+        "__init__.py",
+        "check.py"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 12
+  },
+  "recursive_blame_commits": {}
+}
