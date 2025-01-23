@@ -1,4 +1,4 @@
-**HAFix** is a approach that leverages individual historical heuristics associated with bugs and aggregates the results of these heuristics (HAFix-Agg) to enhance LLMs’ bug-fixing capabilities
+**HAFix** is an approach that leverages individual historical heuristics associated with bugs and aggregates the results of these heuristics (HAFix-Agg) to enhance LLMs’ bug-fixing capabilities
 
 <p align="center"><strong>HAFix: History-Augmented Large Language Models for Bug Fixing</strong></p>
 
@@ -11,7 +11,12 @@
 If you find this repository useful, please consider giving us a star :star: and citation:
 
 ```
-TBD
+@article{shi2025hafix,
+  title={HAFix: History-Augmented Large Language Models for Bug Fixing},
+  author={Shi, Yu and Bangash, Abdul Ali and Fallahzadeh, Emad and Adams, Bram and Hassan, Ahmed E},
+  journal={arXiv preprint arXiv:2501.09135},
+  year={2025}
+}
 ```
 ## Project Structure
 - dataset: collecting the data of baseline and historical heuristics
