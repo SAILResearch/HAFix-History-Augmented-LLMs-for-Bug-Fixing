@@ -3,8 +3,6 @@
 [![Paper](https://img.shields.io/badge/Paper-arXiv:2501.09135-red)](https://arxiv.org/abs/2501.09135)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**HAFix** is an approach that leverages historical heuristics associated with bugs to enhance LLMs' bug-fixing capabilities.
-
 ## 📖 About
 
 This repository contains the implementation and evaluation framework for HAFix, a novel approach to improve Large Language Models' performance on automated bug fixing by incorporating historical information from software repositories.
