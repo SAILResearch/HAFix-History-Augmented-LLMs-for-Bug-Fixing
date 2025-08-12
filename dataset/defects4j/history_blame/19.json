@@ -1,0 +1,78 @@
+{
+  "id": "19",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "22a1fcd79bd2bfbfdc9e80d5162bdf19065f9e5e",
+      "commit_message": "Automated g4 rollback.\n\n*** Reason for rollback ***\n\n<enter reason for rollback>\n\n*** Original change description ***\n\nColumn-indicating caret can be in the end of a line. \nFixes issue 487.\n\nR=acleung\nDELTA=21  (0 added, 20 deleted, 1 changed)\n\n\nRevision created by MOE tool push_codebase.\nMOE_MIGRATION=2421\n\n\ngit-svn-id: https://closure-compiler.googlecode.com/svn/trunk@1218 b0f006be-c8cd-11de-a2e8-8d36a3108c74",
+      "commit_author": "zhuyi@google.com",
+      "commit_date": "2011-06-27 22:16:13",
+      "commit_parent": "245362ac3a7374a5e3a2ecdd63f6f2a58a4c5cb2"
+    },
+    "function": {
+      "function_name": "format",
+      "function_code_before": "private String format(JSError error, boolean warning) {\n  // extract source excerpt\n  SourceExcerptProvider source = getSource();\n  String sourceExcerpt = source == null ? null :\n      excerpt.get(\n          source, error.sourceName, error.lineNumber, excerptFormatter);\n\n  // formatting the message\n  StringBuilder b = new StringBuilder();\n  if (error.sourceName != null) {\n    b.append(error.sourceName);\n    if (error.lineNumber > 0) {\n      b.append(':');\n      b.append(error.lineNumber);\n    }\n    b.append(\": \");\n  }\n\n  b.append(getLevelName(warning ? CheckLevel.WARNING : CheckLevel.ERROR));\n  b.append(\" - \");\n\n  b.append(error.description);\n  b.append('\\n');\n  if (sourceExcerpt != null) {\n    b.append(sourceExcerpt);\n    b.append('\\n');\n    int charno = error.getCharno();\n\n    // padding equal to the excerpt and arrow at the end\n    // charno == sourceExpert.length() means something is missing\n    // at the end of the line\n    if (excerpt.equals(LINE)\n        && 0 <= charno && charno <= sourceExcerpt.length()) {\n      for (int i = 0; i < charno; i++) {\n        char c = sourceExcerpt.charAt(i);\n        if (Character.isWhitespace(c)) {\n          b.append(c);\n        } else {\n          b.append(' ');\n        }\n      }\n      b.append(\"^\\n\");\n    }\n  }\n  return b.toString();\n}",
+      "function_code_after": "private String format(JSError error, boolean warning) {\n  // extract source excerpt\n  SourceExcerptProvider source = getSource();\n  String sourceExcerpt = source == null ? null :\n      excerpt.get(\n          source, error.sourceName, error.lineNumber, excerptFormatter);\n\n  // formatting the message\n  StringBuilder b = new StringBuilder();\n  if (error.sourceName != null) {\n    b.append(error.sourceName);\n    if (error.lineNumber > 0) {\n      b.append(':');\n      b.append(error.lineNumber);\n    }\n    b.append(\": \");\n  }\n\n  b.append(getLevelName(warning ? CheckLevel.WARNING : CheckLevel.ERROR));\n  b.append(\" - \");\n\n  b.append(error.description);\n  b.append('\\n');\n  if (sourceExcerpt != null) {\n    b.append(sourceExcerpt);\n    b.append('\\n');\n    int charno = error.getCharno();\n\n    // padding equal to the excerpt and arrow at the end\n    if (excerpt.equals(LINE)\n        && 0 <= charno && charno < sourceExcerpt.length()) {\n      for (int i = 0; i < charno; i++) {\n        char c = sourceExcerpt.charAt(i);\n        if (Character.isWhitespace(c)) {\n          b.append(c);\n        } else {\n          b.append(' ');\n        }\n      }\n      b.append(\"^\\n\");\n    }\n  }\n  return b.toString();\n}",
+      "function_before_start_line": 66,
+      "function_before_end_line": 111,
+      "function_after_start_line": 66,
+      "function_after_end_line": 109,
+      "function_before_token_count": 266,
+      "function_after_token_count": 266,
+      "functions_name_modified_file": [
+        "format",
+        "withoutSource",
+        "formatWarning",
+        "formatError",
+        "formatLine",
+        "formatRegion",
+        "LightweightMessageFormatter"
+      ],
+      "functions_name_all_files": [
+        "formatWarning",
+        "testOnlyOneEmptyLine",
+        "testFormatErrorTabs",
+        "region",
+        "LightweightMessageFormatter",
+        "formatError",
+        "formatLine",
+        "formatRegion",
+        "format",
+        "withoutSource",
+        "testNull",
+        "testOneLineRegion",
+        "testThreeLineRemoveLastEmptyLine",
+        "testTwoEmptyLines",
+        "testThreeLineRegionAcrossNumberRange",
+        "testFormatErrorSpaces",
+        "source",
+        "testThreeLineRegionEmptyLine",
+        "formatter",
+        "testTwoLineRegion"
+      ],
+      "functions_name_co_evolved_modified_file": [
+        "format"
+      ],
+      "functions_name_co_evolved_all_files": [
+        "testFormatErrorSpaceEndOfLine2",
+        "format",
+        "testFormatErrorSpaceEndOfLine1"
+      ]
+    },
+    "file": {
+      "file_name": "LightweightMessageFormatter.java",
+      "file_nloc": 117,
+      "file_complexity": 25,
+      "file_token_count": 781,
+      "file_before": "",
+      "file_after": "",
+      "file_patch": "@@ -92,10 +92,8 @@ public class LightweightMessageFormatter extends AbstractMessageFormatter {\n       int charno = error.getCharno();\n \n       // padding equal to the excerpt and arrow at the end\n-      // charno == sourceExpert.length() means something is missing\n-      // at the end of the line\n       if (excerpt.equals(LINE)\n-          && 0 <= charno && charno <= sourceExcerpt.length()) {\n+          && 0 <= charno && charno < sourceExcerpt.length()) {\n         for (int i = 0; i < charno; i++) {\n           char c = sourceExcerpt.charAt(i);\n           if (Character.isWhitespace(c)) {\n",
+      "files_name_in_blame_commit": [
+        "LightweightMessageFormatterTest.java",
+        "LightweightMessageFormatter.java"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 14
+  }
+}

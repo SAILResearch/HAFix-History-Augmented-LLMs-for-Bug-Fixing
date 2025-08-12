@@ -1,0 +1,108 @@
+{
+  "id": "80",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "e38dfd44829e13ee83fd62bfe937580f5a998c11",
+      "commit_message": "Detect charset from pseudo XML declaration when in HTML parser mode\n\nFixes #1009",
+      "commit_author": "Jonathan Hedley",
+      "commit_date": "2018-04-28 19:58:51",
+      "commit_parent": "850a9cc02fb72cc450d1a9dc41912fa80fee9020"
+    },
+    "function": {
+      "function_name": "asXmlDeclaration",
+      "function_code_before": "",
+      "function_code_after": "public XmlDeclaration asXmlDeclaration() {\n    String data = getData();\n    Document doc = Jsoup.parse(\"<\" + data.substring(1, data.length() -1) + \">\", baseUri(), Parser.xmlParser());\n    XmlDeclaration decl = null;\n    if (doc.childNodeSize() > 0) {\n        Element el = doc.child(0);\n        decl = new XmlDeclaration(doc.getParser().settings().normalizeTag(el.tagName()), data.startsWith(\"!\"));\n        decl.attributes().addAll(el.attributes());\n    }\n    return decl;\n}",
+      "function_before_start_line": "",
+      "function_before_end_line": "",
+      "function_after_start_line": 74,
+      "function_after_end_line": 84,
+      "function_before_token_count": 0,
+      "function_after_token_count": 126,
+      "functions_name_modified_file": [
+        "isXmlDeclaration",
+        "getData",
+        "nodeName",
+        "toString",
+        "Comment",
+        "outerHtmlTail",
+        "asXmlDeclaration",
+        "outerHtmlHead"
+      ],
+      "functions_name_all_files": [
+        "defaultSettings",
+        "isXmlDeclaration",
+        "supportsXmlCharsetDeclaration",
+        "getData",
+        "readFileToByteBuffer",
+        "toString",
+        "crossStreams",
+        "shouldReturnNullForIllegalCharsetNames",
+        "getCharsetFromContentType",
+        "parseInputStream",
+        "DataUtil",
+        "insert",
+        "parseFragment",
+        "discardsSpuriousByteOrderMarkWhenNoCharsetSet",
+        "firstMetaElementWithCharsetShouldBeUsedForDecoding",
+        "validateCharset",
+        "detectCharsetFromBom",
+        "mimeBoundary",
+        "wrongMetaCharsetFallback",
+        "shouldNotThrowExceptionOnEmptyCharset",
+        "outerHtmlTail",
+        "parse",
+        "process",
+        "initialiseParse",
+        "asXmlDeclaration",
+        "testCharset",
+        "readToByteBuffer",
+        "testQuotedCharset",
+        "supportsUTF8BOM",
+        "insertNode",
+        "generatesMimeBoundaries",
+        "secondMetaElementWithContentTypeContainsCharsetParameter",
+        "popStackToClose",
+        "shouldCorrectCharsetForDuplicateCharsetString",
+        "load",
+        "shouldSelectFirstCharsetOnWeirdMultileCharsetsInMetaTags",
+        "emptyByteBuffer",
+        "supportsBOMinFiles",
+        "nodeName",
+        "Comment",
+        "outerHtmlHead",
+        "BomCharset",
+        "stream",
+        "discardsSpuriousByteOrderMark"
+      ],
+      "functions_name_co_evolved_modified_file": [
+        "isXmlDeclaration",
+        "asXmlDeclaration"
+      ],
+      "functions_name_co_evolved_all_files": [
+        "supportsXmlCharsetDeclaration",
+        "isXmlDeclaration",
+        "parseInputStream",
+        "asXmlDeclaration",
+        "insert"
+      ]
+    },
+    "file": {
+      "file_name": "Comment.java",
+      "file_nloc": 47,
+      "file_complexity": 13,
+      "file_token_count": 348,
+      "file_before": "",
+      "file_after": "",
+      "file_patch": "@@ -1,5 +1,8 @@\n package org.jsoup.nodes;\n \n+import org.jsoup.Jsoup;\n+import org.jsoup.parser.Parser;\n+\n import java.io.IOException;\n \n /**\n@@ -54,4 +57,29 @@ public class Comment extends LeafNode {\n     public String toString() {\n         return outerHtml();\n     }\n+\n+    /**\n+     * Check if this comment looks like an XML Declaration.\n+     * @return true if it looks like, maybe, it's an XML Declaration.\n+     */\n+    public boolean isXmlDeclaration() {\n+        String data = getData();\n+        return (data.length() > 1 && (data.startsWith(\"!\") || data.startsWith(\"?\")));\n+    }\n+\n+    /**\n+     * Attempt to cast this comment to an XML Declaration note.\n+     * @return an XML declaration if it could be parsed as one, null otherwise.\n+     */\n+    public XmlDeclaration asXmlDeclaration() {\n+        String data = getData();\n+        Document doc = Jsoup.parse(\"<\" + data.substring(1, data.length() -1) + \">\", baseUri(), Parser.xmlParser());\n+        XmlDeclaration decl = null;\n+        if (doc.childNodeSize() > 0) {\n+            Element el = doc.child(0);\n+            decl = new XmlDeclaration(doc.getParser().settings().normalizeTag(el.tagName()), data.startsWith(\"!\"));\n+            decl.attributes().addAll(el.attributes());\n+        }\n+        return decl;\n+    }\n }\n",
+      "files_name_in_blame_commit": [
+        "DataUtil.java",
+        "Comment.java",
+        "DataUtilTest.java",
+        "XmlTreeBuilder.java"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 21
+  }
+}

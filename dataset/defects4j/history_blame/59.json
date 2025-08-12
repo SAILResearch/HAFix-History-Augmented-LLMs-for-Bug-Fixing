@@ -1,0 +1,108 @@
+{
+  "id": "59",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "ad4dfdf0136e288ecf91dc5f30a3b950c51c6525",
+      "commit_message": "Minor javadoc improvement wrt #1076, making `SimpleType.construct(Class)` deprecated (was not yet, for some reason, should have been)",
+      "commit_author": "Tatu Saloranta",
+      "commit_date": "2016-01-12 17:28:15",
+      "commit_parent": "ef002240171efb0ff92fd497f0fd050c09f6001b"
+    },
+    "function": {
+      "function_name": "_narrow",
+      "function_code_before": "protected JavaType _narrow(Class<?> subclass)\n{\n    if (_class == subclass) {\n        return this;\n    }\n    // Should we check that there is a sub-class relationship?\n    return new SimpleType(subclass, _bindings, _superClass, _superInterfaces,\n            _valueHandler, _typeHandler, _asStatic);\n}",
+      "function_code_after": "protected JavaType _narrow(Class<?> subclass)\n{\n    if (_class == subclass) {\n        return this;\n    }\n    // Should we check that there is a sub-class relationship?\n    return new SimpleType(subclass, _bindings, _superClass, _superInterfaces,\n            _valueHandler, _typeHandler, _asStatic);\n}",
+      "function_before_start_line": 77,
+      "function_before_end_line": 85,
+      "function_after_start_line": 120,
+      "function_after_end_line": 128,
+      "function_before_token_count": 38,
+      "function_after_token_count": 38,
+      "functions_name_modified_file": [
+        "withContentType",
+        "withTypeHandler",
+        "constructUnsafe",
+        "refine",
+        "buildCanonicalName",
+        "isContainerType",
+        "withStaticTyping",
+        "toString",
+        "withContentValueHandler",
+        "equals",
+        "withValueHandler",
+        "_narrow",
+        "getGenericSignature",
+        "getErasedSignature",
+        "withContentTypeHandler",
+        "construct",
+        "SimpleType"
+      ],
+      "functions_name_all_files": [
+        "buildCanonicalName",
+        "constructUnsafe",
+        "withStaticTyping",
+        "testJavaTypeAsJLRType",
+        "toString",
+        "testLocalType728",
+        "MyEnum2",
+        "getValueHandler",
+        "SimpleType",
+        "containedType",
+        "withContentType",
+        "findSuperType",
+        "_narrow",
+        "testSimpleClass",
+        "findTypeParameters",
+        "containedTypeName",
+        "construct",
+        "method",
+        "refine",
+        "isContainerType",
+        "TypeBase",
+        "getInterfaces",
+        "_classSignature",
+        "withContentValueHandler",
+        "serialize",
+        "withValueHandler",
+        "getBindings",
+        "withTypeHandler",
+        "containedTypeCount",
+        "testArrayType",
+        "testClassKey",
+        "getSuperClass",
+        "toCanonical",
+        "equals",
+        "getTypeHandler",
+        "getGenericSignature",
+        "getErasedSignature",
+        "testEnumType",
+        "withContentTypeHandler",
+        "serializeWithType"
+      ],
+      "functions_name_co_evolved_modified_file": [
+        "_narrow"
+      ],
+      "functions_name_co_evolved_all_files": [
+        "_narrow",
+        "testArrayType"
+      ]
+    },
+    "file": {
+      "file_name": "SimpleType.java",
+      "file_nloc": 154,
+      "file_complexity": 37,
+      "file_token_count": 953,
+      "file_before": "",
+      "file_after": "",
+      "file_patch": "@@ -21,6 +21,14 @@ public class SimpleType // note: until 2.6 was final\n     /**********************************************************\n      */\n \n+    /**\n+     * Constructor only used by core Jackson databind functionality;\n+     * should never be called by application code.\n+     *<p>\n+     * As with other direct construction that by-passes {@link TypeFactory},\n+     * no introspection occurs with respect to super-types; caller must be\n+     * aware of consequences if using this method.\n+     */\n     protected SimpleType(Class<?> cls) {\n         this(cls, TypeBindings.emptyBindings(), null, null);\n     }\n@@ -62,7 +70,10 @@ public class SimpleType // note: until 2.6 was final\n     }\n     \n     /**\n-     * Method used by core Jackson classes: NOT to be used by application code.\n+     * Method used by core Jackson classes: NOT to be used by application code:\n+     * it does NOT properly handle inspection of super-types, so neither parent\n+     * Classes nor implemented Interfaces are accessible with resulting type\n+     * instance.\n      *<p>\n      * NOTE: public only because it is called by <code>ObjectMapper</code> which is\n      * not in same package\n@@ -73,17 +84,20 @@ public class SimpleType // note: until 2.6 was final\n                 null, null, null, null, false);\n     }\n \n-    @Override\n-    protected JavaType _narrow(Class<?> subclass)\n-    {\n-        if (_class == subclass) {\n-            return this;\n-        }\n-        // Should we check that there is a sub-class relationship?\n-        return new SimpleType(subclass, _bindings, _superClass, _superInterfaces,\n-                _valueHandler, _typeHandler, _asStatic);\n-    }\n-\n+    /**\n+     * Method that should NOT to be used by application code:\n+     * it does NOT properly handle inspection of super-types, so neither parent\n+     * Classes nor implemented Interfaces are accessible with resulting type\n+     * instance. Instead, please use {@link TypeFactory}'s <code>constructType</code>\n+     * methods which handle introspection appropriately.\n+     *<p>\n+     * Note that prior to 2.7, method usage was not limited and would typically\n+     * have worked acceptably: the problem comes from inability to resolve super-type\n+     * information, for which {@link TypeFactory} is needed.\n+     * \n+     * @deprecated Since 2.7\n+     */\n+    @Deprecated\n     public static SimpleType construct(Class<?> cls)\n     {\n         /* Let's add sanity checks, just to ensure no\n@@ -102,6 +116,17 @@ public class SimpleType // note: until 2.6 was final\n         return new SimpleType(cls);\n     }\n \n+    @Override\n+    protected JavaType _narrow(Class<?> subclass)\n+    {\n+        if (_class == subclass) {\n+            return this;\n+        }\n+        // Should we check that there is a sub-class relationship?\n+        return new SimpleType(subclass, _bindings, _superClass, _superInterfaces,\n+                _valueHandler, _typeHandler, _asStatic);\n+    }\n+    \n     @Override\n     public JavaType withContentType(JavaType contentType) {\n         throw new IllegalArgumentException(\"Simple types have no content types; can not call withContentType()\");\n",
+      "files_name_in_blame_commit": [
+        "TypeBase.java",
+        "TestJavaType.java",
+        "SimpleType.java"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 16
+  }
+}

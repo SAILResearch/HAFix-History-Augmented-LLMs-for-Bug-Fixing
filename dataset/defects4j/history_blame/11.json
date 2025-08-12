@@ -1,0 +1,115 @@
+{
+  "id": "11",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "02dd7c20646bf67dcfb6f7da6beeb7cdffc6ac22",
+      "commit_message": "Switching from the IllegalStateException to trying hard to work. A better user experience and didn't end up with the code being any more evil. CLI-162\n\ngit-svn-id: https://svn.apache.org/repos/asf/commons/proper/cli/branches/cli-1.x@748461 13f79535-47bb-0310-9956-ffa450edef68",
+      "commit_author": "Henri Yandell",
+      "commit_date": "2009-02-27 09:34:11",
+      "commit_parent": "ac6e754ecfc86822aa1ab74d657b0b3f0222b2e6"
+    },
+    "function": {
+      "function_name": "renderWrappedText",
+      "function_code_before": "protected StringBuffer renderWrappedText(StringBuffer sb, int width, \n                                         int nextLineTabStop, String text)\n{\n    int pos = findWrapPos(text, width, 0);\n\n    if (pos == -1)\n    {\n        sb.append(rtrim(text));\n\n        return sb;\n    }\n    sb.append(rtrim(text.substring(0, pos))).append(defaultNewLine);\n\n    if (nextLineTabStop >= width)\n    {\n        // stops infinite loop happening\n        throw new IllegalStateException(\"Total width is less than the width of the argument and indent \" + \n                                        \"- no room for the description\");\n    }\n\n    // all following lines must be padded with nextLineTabStop space \n    // characters\n    final String padding = createPadding(nextLineTabStop);\n\n    while (true)\n    {\n        text = padding + text.substring(pos).trim();\n        pos = findWrapPos(text, width, 0);\n\n        if (pos == -1)\n        {\n            sb.append(text);\n\n            return sb;\n        }\n\n        if ( (text.length() > width) && (pos == nextLineTabStop - 1) ) \n        {\n            pos = width;\n        }\n\n        sb.append(rtrim(text.substring(0, pos))).append(defaultNewLine);\n    }\n}",
+      "function_code_after": "protected StringBuffer renderWrappedText(StringBuffer sb, int width, \n                                         int nextLineTabStop, String text)\n{\n    int pos = findWrapPos(text, width, 0);\n\n    if (pos == -1)\n    {\n        sb.append(rtrim(text));\n\n        return sb;\n    }\n    sb.append(rtrim(text.substring(0, pos))).append(defaultNewLine);\n\n    if (nextLineTabStop >= width)\n    {\n        // stops infinite loop happening\n        nextLineTabStop = width - 1;\n    }\n\n    // all following lines must be padded with nextLineTabStop space \n    // characters\n    final String padding = createPadding(nextLineTabStop);\n\n    while (true)\n    {\n        text = padding + text.substring(pos).trim();\n        pos = findWrapPos(text, width, 0);\n\n        if (pos == -1)\n        {\n            sb.append(text);\n\n            return sb;\n        }\n\n        if ( (text.length() > width) && (pos == nextLineTabStop - 1) ) \n        {\n            pos = width;\n        }\n\n        sb.append(rtrim(text.substring(0, pos))).append(defaultNewLine);\n    }\n}",
+      "function_before_start_line": 809,
+      "function_before_end_line": 852,
+      "function_after_start_line": 809,
+      "function_after_end_line": 851,
+      "function_before_token_count": 197,
+      "function_after_token_count": 194,
+      "functions_name_modified_file": [
+        "compare",
+        "setOptionComparator",
+        "setWidth",
+        "createPadding",
+        "getDescPadding",
+        "setNewLine",
+        "printUsage",
+        "getLeftPadding",
+        "getNewLine",
+        "setLeftPadding",
+        "findWrapPos",
+        "appendOptionGroup",
+        "renderWrappedText",
+        "setDescPadding",
+        "rtrim",
+        "getArgName",
+        "setSyntaxPrefix",
+        "printWrapped",
+        "renderOptions",
+        "setOptPrefix",
+        "getOptionComparator",
+        "printOptions",
+        "getOptPrefix",
+        "setLongOptPrefix",
+        "getLongOptPrefix",
+        "getSyntaxPrefix",
+        "printHelp",
+        "getWidth",
+        "setArgName",
+        "appendOption"
+      ],
+      "functions_name_all_files": [
+        "compare",
+        "setOptionComparator",
+        "setWidth",
+        "testLongLineChunking",
+        "createPadding",
+        "getDescPadding",
+        "setNewLine",
+        "printUsage",
+        "getLeftPadding",
+        "getNewLine",
+        "testInfiniteLoop",
+        "setLeftPadding",
+        "findWrapPos",
+        "appendOptionGroup",
+        "renderWrappedText",
+        "testLongLineChunkingIndentIgnored",
+        "testPrintHelpLongLines",
+        "setDescPadding",
+        "rtrim",
+        "getArgName",
+        "setSyntaxPrefix",
+        "printWrapped",
+        "renderOptions",
+        "setOptPrefix",
+        "getOptionComparator",
+        "printOptions",
+        "getOptPrefix",
+        "setLongOptPrefix",
+        "getLongOptPrefix",
+        "getSyntaxPrefix",
+        "printHelp",
+        "getWidth",
+        "setArgName",
+        "appendOption"
+      ],
+      "functions_name_co_evolved_modified_file": [
+        "renderWrappedText"
+      ],
+      "functions_name_co_evolved_all_files": [
+        "testLongLineChunkingIndentIgnored",
+        "testLongLineChunking",
+        "renderWrappedText"
+      ]
+    },
+    "file": {
+      "file_name": "HelpFormatter.java",
+      "file_nloc": 416,
+      "file_complexity": 96,
+      "file_token_count": 2543,
+      "file_before": "",
+      "file_after": "",
+      "file_patch": "@@ -822,8 +822,7 @@ public class HelpFormatter\n         if (nextLineTabStop >= width)\n         {\n             // stops infinite loop happening\n-            throw new IllegalStateException(\"Total width is less than the width of the argument and indent \" + \n-                                            \"- no room for the description\");\n+            nextLineTabStop = width - 1;\n         }\n \n         // all following lines must be padded with nextLineTabStop space \n",
+      "files_name_in_blame_commit": [
+        "BugCLI162Test.java",
+        "HelpFormatter.java"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 36
+  }
+}

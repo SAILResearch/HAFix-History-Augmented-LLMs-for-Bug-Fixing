@@ -1,0 +1,97 @@
+{
+  "id": "104",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "64fa01cd788733566b246131160d3e878d9816bc",
+      "commit_message": "Added Pearsons correlation implemendation. JIRA: MATH-114\n\ngit-svn-id: https://svn.apache.org/repos/asf/commons/proper/math/trunk@744802 13f79535-47bb-0310-9956-ffa450edef68",
+      "commit_author": "Phil Steitz",
+      "commit_date": "2009-02-16 05:09:49",
+      "commit_parent": "2d73d9f99a9c7ac71d65b571164ddb37537de4a5"
+    },
+    "function": {
+      "function_name": "getCorrelationPValues",
+      "function_code_before": "",
+      "function_code_after": "public RealMatrix getCorrelationPValues() throws MathException {\n    TDistribution tDistribution = new TDistributionImpl(nObs - 2);\n    int nVars = correlationMatrix.getColumnDimension();\n    double[][] out = new double[nVars][nVars];\n    for (int i = 0; i < nVars; i++) {\n        for (int j = 0; j < nVars; j++) {\n            if (i == j) {\n                out[i][j] = 0d;\n            } else {\n                double r = correlationMatrix.getEntry(i, j);\n                double t = Math.abs(r * Math.sqrt((nObs - 2)/(1 - r * r)));\n                out[i][j] = 2 * (1 - tDistribution.cumulativeProbability(t));\n            }\n        }\n    }\n    return new DenseRealMatrix(out);\n}",
+      "function_before_start_line": "",
+      "function_before_end_line": "",
+      "function_after_start_line": 161,
+      "function_after_end_line": 177,
+      "function_before_token_count": 0,
+      "function_after_token_count": 165,
+      "functions_name_modified_file": [
+        "PearsonsCorrelation",
+        "covarianceToCorrelation",
+        "getCorrelationStandardErrors",
+        "computeCorrelation",
+        "getCorrelationPValues",
+        "getCorrelationMatrix",
+        "checkSufficientData",
+        "correlation"
+      ],
+      "functions_name_all_files": [
+        "PearsonsCorrelation",
+        "covarianceToCorrelation",
+        "getCorrelationStandardErrors",
+        "computeCorrelation",
+        "testCovarianceConsistency",
+        "createRealMatrix",
+        "createLowerTriangularRealMatrix",
+        "getCorrelationPValues",
+        "testConstant",
+        "testInsufficientData",
+        "testStdErrorConsistency",
+        "fillUpper",
+        "getCorrelationMatrix",
+        "testLongly",
+        "testSwissFertility",
+        "checkSufficientData",
+        "correlation"
+      ],
+      "functions_name_co_evolved_modified_file": [
+        "PearsonsCorrelation",
+        "covarianceToCorrelation",
+        "getCorrelationStandardErrors",
+        "computeCorrelation",
+        "getCorrelationPValues",
+        "getCorrelationMatrix",
+        "checkSufficientData",
+        "correlation"
+      ],
+      "functions_name_co_evolved_all_files": [
+        "PearsonsCorrelation",
+        "covarianceToCorrelation",
+        "getCorrelationStandardErrors",
+        "computeCorrelation",
+        "createLowerTriangularRealMatrix",
+        "testCovarianceConsistency",
+        "createRealMatrix",
+        "getCorrelationPValues",
+        "testStdErrorConsistency",
+        "testInsufficientData",
+        "testConstant",
+        "fillUpper",
+        "getCorrelationMatrix",
+        "testLongly",
+        "testSwissFertility",
+        "checkSufficientData",
+        "correlation"
+      ]
+    },
+    "file": {
+      "file_name": "PearsonsCorrelation.java",
+      "file_nloc": 120,
+      "file_complexity": 27,
+      "file_token_count": 973,
+      "file_before": "",
+      "file_after": "",
+      "file_patch": "@@ -0,0 +1,270 @@\n+/*\n+ * Licensed to the Apache Software Foundation (ASF) under one or more\n+ * contributor license agreements.  See the NOTICE file distributed with\n+ * this work for additional information regarding copyright ownership.\n+ * The ASF licenses this file to You under the Apache License, Version 2.0\n+ * (the \"License\"); you may not use this file except in compliance with\n+ * the License.  You may obtain a copy of the License at\n+ *\n+ *      http://www.apache.org/licenses/LICENSE-2.0\n+ *\n+ * Unless required by applicable law or agreed to in writing, software\n+ * distributed under the License is distributed on an \"AS IS\" BASIS,\n+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n+ * See the License for the specific language governing permissions and\n+ * limitations under the License.\n+ */\n+package org.apache.commons.math.stat.correlation;\n+\n+import org.apache.commons.math.MathException;\n+import org.apache.commons.math.MathRuntimeException;\n+import org.apache.commons.math.distribution.TDistribution;\n+import org.apache.commons.math.distribution.TDistributionImpl;\n+import org.apache.commons.math.linear.RealMatrix;\n+import org.apache.commons.math.linear.DenseRealMatrix;\n+import org.apache.commons.math.stat.regression.SimpleRegression;\n+\n+/**\n+ * Computes Pearson's product-moment correlation coefficients for pairs of arrays\n+ * or columns of a matrix.\n+ * \n+ * <p>The constructors that take <code>RealMatrix</code> or \n+ * <code>double[][]</code> arguments generate correlation matrices.  The\n+ * columns of the input matrices are assumed to represent variable values.\n+ * Correlations are given by the formula</p>\n+ * <code>cor(X, Y) = &Sigma;[(x<sub>i</sub> - E(X))(y<sub>i</sub> - E(Y))] / [(n - 1)s(X)s(Y)]</code>\n+ * where <code>E(X)</code> is the mean of <code>X</code>, <code>E(Y)</code>\n+ * is the mean of the <code>Y</code> values and s(X), s(Y) are standard deviations.\n+ * \n+ * @version $Revision$ $Date$\n+ * @since 2.0\n+ */\n+public class PearsonsCorrelation {\n+    \n+    /** correlation matrix */\n+    private final RealMatrix correlationMatrix;\n+    \n+    /** number of observations */\n+    private final int nObs;\n+    \n+    /**\n+     * Create a PearsonsCorrelation instance without data\n+     */\n+    public PearsonsCorrelation() {\n+        super();\n+        correlationMatrix = null;\n+        nObs = 0;\n+    }\n+    \n+    /**\n+     * Create a PearsonsCorrelation from a rectangular array\n+     * whose columns represent values of variables to be correlated.\n+     * \n+     * @param data rectangular array with columns representing variables\n+     * @throws IllegalArgumentException if the input data array is not\n+     * rectangular with at least two rows and two columns.\n+     */\n+    public PearsonsCorrelation(double[][] data) {\n+        this(new DenseRealMatrix(data));\n+    }\n+    \n+    /**\n+     * Create a PearsonsCorrelation from a RealMatrix whose columns\n+     * represent variables to be correlated.\n+     * \n+     * @param matrix matrix with columns representing variables to correlate\n+     */\n+    public PearsonsCorrelation(RealMatrix matrix) {\n+        checkSufficientData(matrix);\n+        nObs = matrix.getRowDimension();\n+        correlationMatrix = computeCorrelation(matrix);\n+    }\n+    \n+    /**\n+     * Create a PearsonsCorrelation from a {@link Covariance}.  The correlation\n+     * matrix is computed by scaling the Covariance's covariance matrix.\n+     * The Covariance instance must have been created from a data matrix with\n+     * columns representing variable values.\n+     * \n+     * @param covariance Covariance instance\n+     */\n+    public PearsonsCorrelation(Covariance covariance) {\n+        RealMatrix covarianceMatrix = covariance.getCovarianceMatrix();\n+        if (covarianceMatrix == null) {\n+            throw MathRuntimeException.createIllegalArgumentException(\n+                    \"Covariance matrix is null\", null);\n+        }\n+        nObs = covariance.getN();\n+        correlationMatrix = covarianceToCorrelation(covarianceMatrix);\n+    }\n+    \n+    /**\n+     * Create a PearsonsCorrelation from a covariance matrix.  The correlation\n+     * matrix is computed by scaling the covariance matrix.\n+     * \n+     * @param covarianceMatrix covariance matrix\n+     * @param numberOfObservations the number of observations in the dataset used to compute\n+     * the covariance matrix\n+     */\n+    public PearsonsCorrelation(RealMatrix covarianceMatrix, int numberOfObservations) {\n+        nObs = numberOfObservations;\n+        correlationMatrix = covarianceToCorrelation(covarianceMatrix);\n+        \n+    }\n+    \n+    /**\n+     * Returns the correlation matrix\n+     * \n+     * @return correlation matrix\n+     */\n+    public RealMatrix getCorrelationMatrix() {\n+        return correlationMatrix;  \n+    }\n+    \n+    /**\n+     * Returns a matrix of standard errors associated with the estimates\n+     * in the correlation matrix.<br/>\n+     * <code>getCorrelationStandardErrors().getEntry(i,j)</code> is the standard\n+     * error associated with <code>getCorrelationMatrix.getEntry(i,j)</code>\n+     * <p>The formula used to compute the standard error is <br/>\n+     * <code>SE<sub>r</sub> = ((1 - r<sup>2</sup>) / (n - 2))<sup>1/2</sup></code>\n+     * where <code>r</code> is the estimated correlation coefficient and \n+     * <code>n</code> is the number of observations in the source dataset.</p>\n+     * \n+     * @return matrix of correlation standard errors\n+     */\n+    public RealMatrix getCorrelationStandardErrors() {\n+        int nVars = correlationMatrix.getColumnDimension();\n+        double[][] out = new double[nVars][nVars];\n+        for (int i = 0; i < nVars; i++) {\n+            for (int j = 0; j < nVars; j++) {\n+                double r = correlationMatrix.getEntry(i, j);\n+                out[i][j] = Math.sqrt((1 - r * r) /(nObs - 2));\n+            }\n+        }\n+        return new DenseRealMatrix(out);\n+    }\n+\n+    /**\n+     * Returns a matrix of p-values associated with the (two-sided) null\n+     * hypothesis that the corresponding correlation coefficient is zero.\n+     * <p><code>getCorrelationPValues().getEntry(i,j)</code> is the probability\n+     * that a random variable distributed as <code>t<sub>n-2</sub></code> takes\n+     * a value with absolute value greater than or equal to <br>\n+     * <code>|r|((n - 2) / (1 - r<sup>2</sup>))<sup>1/2</sup></code></p>\n+     * <p>The values in the matrix are sometimes referred to as the \n+     * <i>significance</i> of the corresponding correlation coefficients.</p>\n+     * \n+     * @return matrix of p-values\n+     * @throws MathException if an error occurs estimating probabilities\n+     */\n+    public RealMatrix getCorrelationPValues() throws MathException {\n+        TDistribution tDistribution = new TDistributionImpl(nObs - 2);\n+        int nVars = correlationMatrix.getColumnDimension();\n+        double[][] out = new double[nVars][nVars];\n+        for (int i = 0; i < nVars; i++) {\n+            for (int j = 0; j < nVars; j++) {\n+                if (i == j) {\n+                    out[i][j] = 0d;\n+                } else {\n+                    double r = correlationMatrix.getEntry(i, j);\n+                    double t = Math.abs(r * Math.sqrt((nObs - 2)/(1 - r * r)));\n+                    out[i][j] = 2 * (1 - tDistribution.cumulativeProbability(t));\n+                }\n+            }\n+        }\n+        return new DenseRealMatrix(out);\n+    }\n+    \n+    \n+    /**\n+     * Computes the correlation matrix for the columns of the\n+     * input matrix.\n+     * \n+     * @param matrix matrix with columns representing variables to correlate\n+     * @return correlation matrix\n+     */\n+    public RealMatrix computeCorrelation(RealMatrix matrix) {\n+        int nVars = matrix.getColumnDimension();\n+        RealMatrix outMatrix = new DenseRealMatrix(nVars, nVars);\n+        for (int i = 0; i < nVars; i++) {\n+            for (int j = 0; j < i; j++) {\n+              double corr = correlation(matrix.getColumn(i), matrix.getColumn(j));\n+              outMatrix.setEntry(i, j, corr);\n+              outMatrix.setEntry(j, i, corr);\n+            }\n+            outMatrix.setEntry(i, i, 1d);\n+        }\n+        return outMatrix;\n+    }\n+    \n+    /**\n+     * Computes the Pearson's product-moment correlation coefficient between the two arrays.\n+     * \n+     * </p>Throws IllegalArgumentException if the arrays do not have the same length\n+     * or their common length is less than 2</p>\n+     *\n+     * @param xArray first data array\n+     * @param yArray second data array\n+     * @return Returns Pearson's correlation coefficient for the two arrays \n+     * @throws  IllegalArgumentException if the arrays lengths do not match or\n+     * there is insufficient data\n+     */\n+    public double correlation(final double[] xArray, final double[] yArray) throws IllegalArgumentException {\n+        SimpleRegression regression = new SimpleRegression();\n+        if(xArray.length == yArray.length && xArray.length > 1) {\n+            for(int i=0; i<xArray.length; i++) {\n+                regression.addData(xArray[i], yArray[i]);\n+            }\n+            return regression.getR();\n+        }\n+        else {\n+            throw MathRuntimeException.createIllegalArgumentException(\n+                    \"Invalid array dimensions. xArray has size {0}; yArray has {1} elements\",\n+                    new Object[] {xArray.length, yArray.length});\n+        }\n+    }\n+    \n+    /**\n+     * Derives a correlation matrix from a covariance matrix.\n+     * \n+     * <p>Uses the formula <br/>\n+     * <code>r(X,Y) = cov(X,Y)/s(X)s(Y)</code> where \n+     * <code>r(&middot,&middot;)</code> is the correlation coefficient and\n+     * <code>s(&middot;)</code> means standard deviation.</p>\n+     * \n+     * @param covarianceMatrix the covariance matrix\n+     * @return correlation matrix\n+     */\n+    public RealMatrix covarianceToCorrelation(RealMatrix covarianceMatrix) {\n+        int nVars = covarianceMatrix.getColumnDimension();\n+        RealMatrix outMatrix = new DenseRealMatrix(nVars, nVars);\n+        for (int i = 0; i < nVars; i++) {\n+            double sigma = Math.sqrt(covarianceMatrix.getEntry(i, i));\n+            outMatrix.setEntry(i, i, 1d);\n+            for (int j = 0; j < i; j++) {\n+                double entry = covarianceMatrix.getEntry(i, j) / \n+                       (sigma * Math.sqrt(covarianceMatrix.getEntry(j, j)));\n+                outMatrix.setEntry(i, j, entry);\n+                outMatrix.setEntry(j, i, entry);\n+            }\n+        }\n+        return outMatrix;\n+    }\n+    \n+    /**\n+     * Throws IllegalArgumentException of the matrix does not have at least\n+     * two columns and two rows\n+     * \n+     * @param matrix matrix to check for sufficiency\n+     */\n+    private void checkSufficientData(final RealMatrix matrix) {\n+        int nRows = matrix.getRowDimension();\n+        int nCols = matrix.getColumnDimension();\n+        if (nRows < 2 || nCols < 2) {\n+            throw MathRuntimeException.createIllegalArgumentException(\n+                    \"Insufficient data: only {0} rows and {1} columns.\",\n+                    new Object[]{nRows, nCols});\n+        }\n+    }\n+}\n",
+      "files_name_in_blame_commit": [
+        "PearsonsCorrelationTest.java",
+        "PearsonsCorrelation.java"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 7
+  }
+}

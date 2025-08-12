@@ -1,0 +1,81 @@
+{
+  "id": "83",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "2c1b5be146585dc8b27aedebca959f92da19094e",
+      "commit_message": "[LANG-720] StringEscapeUtils.escapeXml(input) outputs wrong results when an input contains characters in Supplementary Planes.  ALSO rewrite method to avoid modification of counter variable in for loop\n\ngit-svn-id: https://svn.apache.org/repos/asf/commons/proper/lang/trunk@1146844 13f79535-47bb-0310-9956-ffa450edef68",
+      "commit_author": "Matthew Jason Benson",
+      "commit_date": "2011-07-14 18:49:51",
+      "commit_parent": "8a3e8603455c6dbfc595ab7a7e4a32f171a8b245"
+    },
+    "function": {
+      "function_name": "translate",
+      "function_code_before": "public final void translate(CharSequence input, Writer out) throws IOException {\n    if (out == null) {\n        throw new IllegalArgumentException(\"The Writer must not be null\");\n    }\n    if (input == null) {\n        return;\n    }\n    int sz = Character.codePointCount(input, 0, input.length());\n    for (int i = 0; i < sz; i++) {\n\n        // consumed is the number of codepoints consumed\n        int consumed = translate(input, i, out);\n\n        if (consumed == 0) {\n            out.write(Character.toChars(Character.codePointAt(input, i)));\n        } else {\n            // contract with translators is that they have to understand codepoints \n            // and they just took care of a surrogate pair\n            for (int j = 0; j < consumed; j++) {\n                if (i < sz - 2) {\n                    i += Character.charCount(Character.codePointAt(input, i));\n                } else {\n                    // If the String ends with a high surrogate, just add the 1 and don't worry about such things\n                    i++;\n                }\n            }\n            // for loop will increment 1 anyway, so remove 1 to account for that\n            i--;\n        }\n    }\n}",
+      "function_code_after": "    public final void translate(CharSequence input, Writer out) throws IOException {\n        if (out == null) {\n            throw new IllegalArgumentException(\"The Writer must not be null\");\n        }\n        if (input == null) {\n            return;\n        }\n        int pos = 0;\n        int len = input.length();\n        while (pos < len) {\n            int consumed = translate(input, pos, out);\n            if (consumed == 0) {\n                char[] c = Character.toChars(Character.codePointAt(input, pos));\n                out.write(c);\n                pos+= c.length;\n                continue;\n            }\n//          // contract with translators is that they have to understand codepoints \n//          // and they just took care of a surrogate pair\n            for (int pt = 0; pt < consumed; pt++) {\n                pos += Character.charCount(Character.codePointAt(input, pos));\n            }\n        }\n    }",
+      "function_before_start_line": 75,
+      "function_before_end_line": 105,
+      "function_after_start_line": 75,
+      "function_after_end_line": 98,
+      "function_before_token_count": 164,
+      "function_after_token_count": 145,
+      "functions_name_modified_file": [
+        "with",
+        "hex",
+        "translate"
+      ],
+      "functions_name_all_files": [
+        "testUnescapeJava",
+        "testEscapeCsvWriter",
+        "checkCsvEscapeWriter",
+        "testEscapeXml",
+        "testUnescapeHtml4",
+        "testUnescapeHexCharsHtml",
+        "StringEscapeUtilsTest",
+        "testUnescapeCsvWriter",
+        "testEscapeJava",
+        "testStandaloneAmphersand",
+        "testEscapeJavaWithSlash",
+        "testUnescapeCsvString",
+        "testEscapeHtmlVersions",
+        "testConstructor",
+        "testLang313",
+        "testEscapeHtml",
+        "testLang720",
+        "with",
+        "testEscapeHiragana",
+        "testEscapeHtmlHighUnicode",
+        "translate",
+        "testEscapeCsvString",
+        "hex",
+        "assertUnescapeJava",
+        "assertEscapeJava",
+        "checkCsvUnescapeWriter",
+        "testEscapeEcmaScript",
+        "testUnescapeUnknownEntity"
+      ],
+      "functions_name_co_evolved_modified_file": [
+        "translate"
+      ],
+      "functions_name_co_evolved_all_files": [
+        "testLang720",
+        "translate"
+      ]
+    },
+    "file": {
+      "file_name": "CharSequenceTranslator.java",
+      "file_nloc": 51,
+      "file_complexity": 11,
+      "file_token_count": 361,
+      "file_before": "",
+      "file_after": "",
+      "file_patch": "@@ -79,27 +79,20 @@ public final void translate(CharSequence input, Writer out) throws IOException {\n         if (input == null) {\n             return;\n         }\n-        int sz = Character.codePointCount(input, 0, input.length());\n-        for (int i = 0; i < sz; i++) {\n-\n-            // consumed is the number of codepoints consumed\n-            int consumed = translate(input, i, out);\n-\n+        int pos = 0;\n+        int len = input.length();\n+        while (pos < len) {\n+            int consumed = translate(input, pos, out);\n             if (consumed == 0) {\n-                out.write(Character.toChars(Character.codePointAt(input, i)));\n-            } else {\n-                // contract with translators is that they have to understand codepoints \n-                // and they just took care of a surrogate pair\n-                for (int j = 0; j < consumed; j++) {\n-                    if (i < sz - 2) {\n-                        i += Character.charCount(Character.codePointAt(input, i));\n-                    } else {\n-                        // If the String ends with a high surrogate, just add the 1 and don't worry about such things\n-                        i++;\n-                    }\n-                }\n-                // for loop will increment 1 anyway, so remove 1 to account for that\n-                i--;\n+                char[] c = Character.toChars(Character.codePointAt(input, pos));\n+                out.write(c);\n+                pos+= c.length;\n+                continue;\n+            }\n+//          // contract with translators is that they have to understand codepoints \n+//          // and they just took care of a surrogate pair\n+            for (int pt = 0; pt < consumed; pt++) {\n+                pos += Character.charCount(Character.codePointAt(input, pos));\n             }\n         }\n     }\n",
+      "files_name_in_blame_commit": [
+        "StringEscapeUtilsTest.java",
+        "CharSequenceTranslator.java"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 17
+  }
+}

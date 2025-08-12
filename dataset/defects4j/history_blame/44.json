@@ -1,0 +1,104 @@
+{
+  "id": "44",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "80447398e04dee000215c458b88e467ac41d8c16",
+      "commit_message": "infrastructure that is going to be needed by ZipFile in order to correctly parse ZIP64 data from the central directory.  COMPRESS-149\n\ngit-svn-id: https://svn.apache.org/repos/asf/commons/proper/compress/trunk@1153755 13f79535-47bb-0310-9956-ffa450edef68",
+      "commit_author": "Stefan Bodewig",
+      "commit_date": "2011-08-04 05:25:28",
+      "commit_parent": "45b3f7cc0dcebde4bc2e733e02fd73cb008ad5ef"
+    },
+    "function": {
+      "function_name": "reparseCentralDirectoryData",
+      "function_code_before": "",
+      "function_code_after": "public void reparseCentralDirectoryData(boolean hasUncompressedSize,\n                                        boolean hasCompressedSize,\n                                        boolean hasRelativeHeaderOffset,\n                                        boolean hasDiskStart)\n    throws ZipException {\n    if (rawCentralDirectoryData != null) {\n        int expectedLength = (hasUncompressedSize ? DWORD : 0)\n            + (hasCompressedSize ? DWORD : 0)\n            + (hasRelativeHeaderOffset ? DWORD : 0)\n            + (hasDiskStart ? WORD : 0);\n        if (rawCentralDirectoryData.length != expectedLength) {\n            throw new ZipException(\"central directory zip64 extended\"\n                                   + \" information extra field's length\"\n                                   + \" doesn't match central directory\"\n                                   + \" data.  Expected length \"\n                                   + expectedLength + \" but is \"\n                                   + rawCentralDirectoryData.length);\n        }\n        int offset = 0;\n        if (hasUncompressedSize) {\n            size = new ZipEightByteInteger(rawCentralDirectoryData, offset);\n            offset += DWORD;\n        }\n        if (hasCompressedSize) {\n            compressedSize = new ZipEightByteInteger(rawCentralDirectoryData,\n                                                     offset);\n            offset += DWORD;\n        }\n        if (hasRelativeHeaderOffset) {\n            relativeHeaderOffset =\n                new ZipEightByteInteger(rawCentralDirectoryData, offset);\n            offset += DWORD;\n        }\n        if (hasDiskStart) {\n            diskStart = new ZipLong(rawCentralDirectoryData, offset);\n            offset += WORD;\n        }\n    }\n}",
+      "function_before_start_line": "",
+      "function_before_end_line": "",
+      "function_after_start_line": 241,
+      "function_after_end_line": 279,
+      "function_before_token_count": 0,
+      "function_after_token_count": 177,
+      "functions_name_modified_file": [
+        "getSize",
+        "getLocalFileDataData",
+        "setRelativeHeaderOffset",
+        "parseFromLocalFileData",
+        "setDiskStartNumber",
+        "reparseCentralDirectoryData",
+        "getCompressedSize",
+        "getRelativeHeaderOffset",
+        "getCentralDirectoryLength",
+        "Zip64ExtendedInformationExtraField",
+        "getCentralDirectoryData",
+        "parseFromCentralDirectoryData",
+        "getHeaderId",
+        "setSize",
+        "addSizes",
+        "getDiskStartNumber",
+        "setCompressedSize",
+        "getLocalFileDataLength"
+      ],
+      "functions_name_all_files": [
+        "getSize",
+        "getCompressedSize",
+        "testReparseCDSingleEightByteData",
+        "addSizes",
+        "Zip64ExtendedInformationExtraFieldTest",
+        "testReadLFHSizesAndDisk",
+        "setCompressedSize",
+        "testReadCDSizesOffsetAndDisk",
+        "parseFromLocalFileData",
+        "checkOffset",
+        "checkSizes",
+        "testWriteCDOnlySizes",
+        "testWriteCDSizeAndOffset",
+        "getCentralDirectoryData",
+        "setSize",
+        "getHeaderId",
+        "checkDisk",
+        "getDiskStartNumber",
+        "setDiskStartNumber",
+        "getRelativeHeaderOffset",
+        "parseFromCentralDirectoryData",
+        "testWriteCDSizeAndDisk",
+        "testReadLFHSizesOffsetAndDisk",
+        "getLocalFileDataData",
+        "reparseCentralDirectoryData",
+        "testReadCDSizesAndOffset",
+        "testReadLFHSizesOnly",
+        "testWriteCDSizeOffsetAndDisk",
+        "getCentralDirectoryLength",
+        "Zip64ExtendedInformationExtraField",
+        "testReadLFHSizesAndOffset",
+        "testReadCDSomethingAndDisk",
+        "setRelativeHeaderOffset",
+        "getLocalFileDataLength"
+      ],
+      "functions_name_co_evolved_modified_file": [
+        "parseFromCentralDirectoryData",
+        "reparseCentralDirectoryData"
+      ],
+      "functions_name_co_evolved_all_files": [
+        "parseFromCentralDirectoryData",
+        "testReparseCDSingleEightByteData",
+        "reparseCentralDirectoryData"
+      ]
+    },
+    "file": {
+      "file_name": "Zip64ExtendedInformationExtraField.java",
+      "file_nloc": 176,
+      "file_complexity": 49,
+      "file_token_count": 1042,
+      "file_before": "",
+      "file_after": "",
+      "file_patch": "@@ -84,6 +84,18 @@ public class Zip64ExtendedInformationExtraField implements ZipExtraField {\n     private ZipEightByteInteger size, compressedSize, relativeHeaderOffset;\n     private ZipLong diskStart;\n \n+    /**\n+     * Stored in {@link #parseFromCentralDirectoryData\n+     * parseFromCentralDirectoryData} so it can be reused when ZipFile\n+     * calls {@link #reparseCentralDirectoryData\n+     * reparseCentralDirectoryData}.\n+     *\n+     * <p>Not used for anything else</p>\n+     *\n+     * @since Apache Commons Compress 1.3\n+     */\n+    private byte[] rawCentralDirectoryData;\n+\n     /**\n      * This constructor should only be used by the code that reads\n      * archives inside of Commons Compress.\n@@ -194,6 +206,10 @@ public void parseFromLocalFileData(byte[] buffer, int offset, int length)\n     public void parseFromCentralDirectoryData(byte[] buffer, int offset,\n                                               int length)\n         throws ZipException {\n+        // store for processing in reparseCentralDirectoryData\n+        rawCentralDirectoryData = new byte[length];\n+        System.arraycopy(buffer, offset, rawCentralDirectoryData, 0, length);\n+\n         // if there is no size information in here, we are screwed and\n         // can only hope things will get resolved by LFH data later\n         // But there are some cases that can be detected\n@@ -213,6 +229,55 @@ public void parseFromCentralDirectoryData(byte[] buffer, int offset,\n         }\n     }\n \n+    /**\n+     * Parses the raw bytes read from the central directory extra\n+     * field with knowledge which fields are expected to be there.\n+     *\n+     * <p>All four fields inside the zip64 extended information extra\n+     * field are optional and only present if their corresponding\n+     * entry inside the central directory contains the correct magic\n+     * value.</p>\n+     */\n+    public void reparseCentralDirectoryData(boolean hasUncompressedSize,\n+                                            boolean hasCompressedSize,\n+                                            boolean hasRelativeHeaderOffset,\n+                                            boolean hasDiskStart)\n+        throws ZipException {\n+        if (rawCentralDirectoryData != null) {\n+            int expectedLength = (hasUncompressedSize ? DWORD : 0)\n+                + (hasCompressedSize ? DWORD : 0)\n+                + (hasRelativeHeaderOffset ? DWORD : 0)\n+                + (hasDiskStart ? WORD : 0);\n+            if (rawCentralDirectoryData.length != expectedLength) {\n+                throw new ZipException(\"central directory zip64 extended\"\n+                                       + \" information extra field's length\"\n+                                       + \" doesn't match central directory\"\n+                                       + \" data.  Expected length \"\n+                                       + expectedLength + \" but is \"\n+                                       + rawCentralDirectoryData.length);\n+            }\n+            int offset = 0;\n+            if (hasUncompressedSize) {\n+                size = new ZipEightByteInteger(rawCentralDirectoryData, offset);\n+                offset += DWORD;\n+            }\n+            if (hasCompressedSize) {\n+                compressedSize = new ZipEightByteInteger(rawCentralDirectoryData,\n+                                                         offset);\n+                offset += DWORD;\n+            }\n+            if (hasRelativeHeaderOffset) {\n+                relativeHeaderOffset =\n+                    new ZipEightByteInteger(rawCentralDirectoryData, offset);\n+                offset += DWORD;\n+            }\n+            if (hasDiskStart) {\n+                diskStart = new ZipLong(rawCentralDirectoryData, offset);\n+                offset += WORD;\n+            }\n+        }\n+    }\n+\n     /**\n      * The uncompressed size stored in this extra field.\n      */\n",
+      "files_name_in_blame_commit": [
+        "Zip64ExtendedInformationExtraField.java",
+        "Zip64ExtendedInformationExtraFieldTest.java"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 11
+  }
+}

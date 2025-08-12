@@ -1,0 +1,58 @@
+{
+  "id": "12",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "be7dfa5b0a0e0bf609ac77ae45aeb2c3287ad453",
+      "commit_message": "added support for *boolean/flag* options from properties\n\n\ngit-svn-id: https://svn.apache.org/repos/asf/jakarta/commons/proper/cli/trunk@129854 13f79535-47bb-0310-9956-ffa450edef68",
+      "commit_author": "John Keyes",
+      "commit_date": "2002-11-27 23:22:02",
+      "commit_parent": "7e6dedb3098a6704422cf2ded3c099bdc0e0c6a0"
+    },
+    "function": {
+      "function_name": "processProperties",
+      "function_code_before": "private void processProperties( Properties properties ) {\n    if( properties == null ) {\n        return;\n    }\n\n    for( Enumeration e = properties.propertyNames(); e.hasMoreElements(); ) {\n        String option = e.nextElement().toString();\n        if( !cmd.hasOption( option ) ) {\n            Option opt = options.getOption( option );\n            if( opt.getValues() == null || opt.getValues().length == 0 ) {\n                opt.addValue( properties.getProperty( option ) );\n            }\n            cmd.addOption( opt );\n        }\n    }\n}",
+      "function_code_after": "private void processProperties( Properties properties ) {\n    if( properties == null ) {\n        return;\n    }\n\n    for( Enumeration e = properties.propertyNames(); e.hasMoreElements(); ) {\n        String option = e.nextElement().toString();\n        if( !cmd.hasOption( option ) ) {\n            Option opt = options.getOption( option );\n\n            // get the value from the properties instance\n            String value = properties.getProperty( option );\n\n            if( opt.hasArgs() ) {\n                if( opt.getValues() == null || opt.getValues().length == 0 ) {\n                    try {\n                        opt.addValue( value );\n                    }\n                    catch( RuntimeException exp ) {\n                        // if we cannot add the value don't worry about it\n                    }\n                }\n            }\n            else if ( ! ( \"yes\".equalsIgnoreCase( value ) ||\n                          \"true\".equalsIgnoreCase( value ) ||\n                          \"1\".equalsIgnoreCase( value) ) ) {\n                // if the value is not yes, true or 1 then don't add the\n                // option to the CommandLine\n                break;\n            }\n\n            cmd.addOption( opt );\n        }\n    }\n}",
+      "function_before_start_line": 249,
+      "function_before_end_line": 264,
+      "function_after_start_line": 249,
+      "function_after_end_line": 283,
+      "function_before_token_count": 113,
+      "function_after_token_count": 169,
+      "functions_name_modified_file": [
+        "checkRequiredOptions",
+        "processProperties",
+        "parse",
+        "processOption",
+        "processArgs"
+      ],
+      "functions_name_all_files": [
+        "checkRequiredOptions",
+        "processProperties",
+        "parse",
+        "processOption",
+        "processArgs"
+      ],
+      "functions_name_co_evolved_modified_file": [
+        "processProperties"
+      ],
+      "functions_name_co_evolved_all_files": [
+        "processProperties"
+      ]
+    },
+    "file": {
+      "file_name": "Parser.java",
+      "file_nloc": 180,
+      "file_complexity": 42,
+      "file_token_count": 981,
+      "file_before": "",
+      "file_after": "",
+      "file_patch": "@@ -1,7 +1,7 @@\n /*\n- * $Header: /home/jerenkrantz/tmp/commons/commons-convert/cvs/home/cvs/jakarta-commons//cli/src/java/org/apache/commons/cli/Parser.java,v 1.9 2002/11/25 23:43:40 jkeyes Exp $\n- * $Revision: 1.9 $\n- * $Date: 2002/11/25 23:43:40 $\n+ * $Header: /home/jerenkrantz/tmp/commons/commons-convert/cvs/home/cvs/jakarta-commons//cli/src/java/org/apache/commons/cli/Parser.java,v 1.10 2002/11/27 23:22:02 jkeyes Exp $\n+ * $Revision: 1.10 $\n+ * $Date: 2002/11/27 23:22:02 $\n  *\n  * ====================================================================\n  *\n@@ -74,7 +74,7 @@ import java.util.Properties;\n  *\n  * @author John Keyes (john at integralsource.com)\n  * @see Parser\n- * @version $Revision: 1.9 $\n+ * @version $Revision: 1.10 $\n  */\n public abstract class Parser implements CommandLineParser {\n \n@@ -255,9 +255,28 @@ public abstract class Parser implements CommandLineParser {\n             String option = e.nextElement().toString();\n             if( !cmd.hasOption( option ) ) {\n                 Option opt = options.getOption( option );\n-                if( opt.getValues() == null || opt.getValues().length == 0 ) {\n-                    opt.addValue( properties.getProperty( option ) );\n+\n+                // get the value from the properties instance\n+                String value = properties.getProperty( option );\n+\n+                if( opt.hasArgs() ) {\n+                    if( opt.getValues() == null || opt.getValues().length == 0 ) {\n+                        try {\n+                            opt.addValue( value );\n+                        }\n+                        catch( RuntimeException exp ) {\n+                            // if we cannot add the value don't worry about it\n+                        }\n+                    }\n                 }\n+                else if ( ! ( \"yes\".equalsIgnoreCase( value ) ||\n+                              \"true\".equalsIgnoreCase( value ) ||\n+                              \"1\".equalsIgnoreCase( value) ) ) {\n+                    // if the value is not yes, true or 1 then don't add the\n+                    // option to the CommandLine\n+                    break;\n+                }\n+\n                 cmd.addOption( opt );\n             }\n         }\n",
+      "files_name_in_blame_commit": [
+        "Parser.java"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 39
+  }
+}

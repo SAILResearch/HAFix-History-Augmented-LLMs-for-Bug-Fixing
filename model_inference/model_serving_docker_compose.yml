@@ -1,0 +1,114 @@
+services:
+  codellama_7b_label:
+    image: ollama/ollama
+    container_name: codellama_7b_label
+    ports:
+      - "11430:11434"
+    volumes:
+      - codellama_7b:/root/.ollama:ro
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']
+              capabilities: [gpu]
+
+  codellama_7b_mask:
+    image: ollama/ollama
+    container_name: codellama_7b_mask
+    ports:
+      - "11431:11434"
+    volumes:
+      - codellama_7b:/root/.ollama:ro
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['1']
+              capabilities: [gpu]
+
+  deepseek_coder_6_7b_label:
+    image: ollama/ollama
+    container_name: deepseek_coder_6.7b_label
+    ports:
+      - "11432:11434"
+    volumes:
+      - deepseek_coder_6.7b:/root/.ollama:ro
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=2
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['2']
+              capabilities: [gpu]
+
+  deepseek_coder_6_7b_mask:
+    image: ollama/ollama
+    container_name: deepseek_coder_6.7b_mask
+    ports:
+      - "11433:11434"
+    volumes:
+      - deepseek_coder_6.7b:/root/.ollama:ro
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=3
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['3']
+              capabilities: [gpu]
+
+  deepseek_coder_v2_16b_label:
+    image: ollama/ollama
+    container_name: deepseek_coder_v2_16b_label
+    ports:
+      - "11434:11434"
+    volumes:
+      - deepseek_coder_v2_16b:/root/.ollama:ro
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=4
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['4']
+              capabilities: [gpu]
+
+  deepseek_coder_v2_16b_mask:
+    image: ollama/ollama
+    container_name: deepseek_coder_v2_16b_mask
+    ports:
+      - "11435:11434"
+    volumes:
+      - deepseek_coder_v2_16b:/root/.ollama:ro
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=5
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['5']
+              capabilities: [gpu]
+
+volumes:
+  codellama_7b:
+    external: true
+  deepseek_coder_6.7b:
+    external: true
+  deepseek_coder_v2_16b:
+    external: true

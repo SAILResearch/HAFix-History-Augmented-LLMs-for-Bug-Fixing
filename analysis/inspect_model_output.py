@@ -1,64 +1,82 @@
-import os
 import json
-
-from util import HistoryCategory
+import os
+from argparse import ArgumentParser
+import pandas as pd
+from util import HistoryCategory, get_model_and_prompt_enum
 
 CURRENT_DIR_PATH = os.path.abspath(os.path.dirname(__file__))
+RQ_BASE = os.path.abspath(os.path.join(CURRENT_DIR_PATH, 'RQ1_2'))
 PROJECT_DIR_BASE = os.path.abspath(os.path.join(CURRENT_DIR_PATH, '../'))
-MODEL_INFERENCE_BASE_PATH = os.path.abspath(os.path.join(PROJECT_DIR_BASE, 'backup', 'model_inference'))
-MODEL_EVALUATION_BASE_PATH = os.path.abspath(os.path.join(PROJECT_DIR_BASE, 'backup', 'evaluation'))
+EVALUATION_BASE_PATH = os.path.abspath(os.path.join(PROJECT_DIR_BASE, 'backup/evaluation'))
+
+
+def get_parser():
+    parser = ArgumentParser()
+    parser.add_argument('--datasets', type=str)
+    parser.add_argument('--evaluation_dirs', type=str)
+    parser.add_argument('--history_settings', type=str)
+    parser.add_argument('--bugs_meta_data_file', type=str)
+    return parser
 
 
 def main():
-    model_name_path = [
-        'codellama_7b_instruct_hf',
-        'codellama_7b_instruct_hf_infill',
-        'codellama_13b_instruct_hf',
-        'codellama_13b_instruct_hf_infill',
-        'codellama_34b_instruct_hf'
-    ]
-    history_settings_ids = [1, 2, 3, 4, 5, 6, 7, 8]
+    args = get_parser().parse_args()
+    sample_size = 10  # 1, 5, 10
+    bugs_meta_data_file = args.bugs_meta_data_file
+    bugs_meta_data: dict = json.load(open(bugs_meta_data_file, 'r'))
 
-    for bug_id in range(1, 69):
-        bug_id_str = str(bug_id)
-        _bug_id_inspect_path = f"{CURRENT_DIR_PATH}/inspect_model_output"
-        os.makedirs(_bug_id_inspect_path, exist_ok=True)
-        bug_id_inspect_path = f"{_bug_id_inspect_path}/model_output_bug_{bug_id}.txt"
-        bug_id_inspect_result = open(bug_id_inspect_path, 'a')
-        bug_id_inspect_result.write(f"####################inspect model-generated code for bug {bug_id}####################\n")
-        for model_name in model_name_path:
-            bug_id_inspect_result.write(
-                f"####################inspect {model_name}-generated code####################\n")
-            for history_flag in history_settings_ids:
-                history_flag = str(history_flag)
-                if model_name == 'codellama_7b_instruct_hf_infill' or model_name == 'codellama_13b_instruct_hf_infill':
-                    inference_path = f"{MODEL_INFERENCE_BASE_PATH}/{model_name}/{model_name.replace('_infill', '')}_{HistoryCategory(history_flag).name}.json"
-                    evaluate_path = f"{MODEL_EVALUATION_BASE_PATH}/{model_name}/unittest_result_{model_name.replace('_infill', '')}_{HistoryCategory(history_flag).name}.json"
-                else:
-                    inference_path = f"{MODEL_INFERENCE_BASE_PATH}/{model_name}/{model_name}_{HistoryCategory(history_flag).name}.json"
-                    evaluate_path = f"{MODEL_EVALUATION_BASE_PATH}/{model_name}/unittest_result_{model_name}_{HistoryCategory(history_flag).name}.json"
+    for dataset_name in args.datasets.split(','):
+        for evaluation_dir in args.evaluation_dirs.split(','):
+            # first parse the model name and prompt style
+            model_name_enum, prompt_style_enum = get_model_and_prompt_enum(evaluation_dir)
+            model_name, prompt_style = model_name_enum.value, prompt_style_enum.value
+            if not model_name or not prompt_style:
+                print(f"the evaluation_dir is not a valid path name: {evaluation_dir}")
+                continue
 
-                inference_json = json.load(open(inference_path, 'r'))
-                evaluate_result: dict = json.load(open(evaluate_path, 'r'))
+            bug_fixed_csv_file = f"{RQ_BASE}/{dataset_name}/{evaluation_dir}/hafix_bugs_fixed_number.csv"
+            evaluation_result_path = f"{EVALUATION_BASE_PATH}/{dataset_name}/{evaluation_dir}"
+            bug_id_inspect_path = f"{CURRENT_DIR_PATH}/manual_check/{dataset_name}/{evaluation_dir}"
+            os.makedirs(bug_id_inspect_path, exist_ok=True)
 
-                if bug_id_str not in inference_json or bug_id_str not in evaluate_result:
-                    continue
-                if history_flag == '1':
-                    buggy_code = inference_json[bug_id_str]['input']['buggy_code']
-                    ground_fixed_code = inference_json[bug_id_str]['ground_fixed_code']
-                    bug_id_inspect_result.write(f"#1. buggy code\n")
-                    bug_id_inspect_result.write(f"{buggy_code}\n\n")
-                    bug_id_inspect_result.write(f"#2. ground fixed code\n")
-                    bug_id_inspect_result.write(f"{ground_fixed_code}\n\n")
+            df = pd.read_csv(bug_fixed_csv_file)
+            baseline = "setting_1"
+            baseline_fails = df[df[baseline] == '0']
 
-                model_generated_code = inference_json[bug_id_str]['output']['greedy_search']
-                result = evaluate_result[bug_id_str]['greedy_search_flag']
-                bug_id_inspect_result.write(f"#setting_{history_flag}: {HistoryCategory(history_flag).name}\n")
-                bug_id_inspect_result.write(f"{result}\n")
-                bug_id_inspect_result.write(f"{model_generated_code}\n\n")
+            for history_flag in args.history_settings.split(','):
+                # Find bugs where baseline=0 but history_setting=1
+                history_unique_fixes = baseline_fails[baseline_fails[f"setting_{history_flag}"] == '1']
+                bug_ids = history_unique_fixes['bug_id'].tolist()
+                print(f"heuristics_{history_flag} can uniquely fix {len(history_unique_fixes)} bugs:\n{bug_ids}")
+                cases_print = {}
+                file_name = f'unittest_result_{HistoryCategory(history_flag).name}.json'
+                name_suf_dict = json.load(open(os.path.join(evaluation_result_path, file_name), 'r'))
+                for bug_id, result in name_suf_dict.items():
+                    if bug_id not in bug_ids:
+                        continue
+                    for index, test_flag in enumerate(list(result['nucleus_sampling_flags'])[:sample_size]):
+                        if test_flag == 'Pass':
+                            if bug_id not in cases_print:
+                                cases_print[bug_id] = []
+                            cases_print[bug_id].append(result["nucleus_sampling"][index])
 
-        bug_id_inspect_result.close()
+                for bug_id, solution_list in cases_print.items():
+                    bug_inspect_file = f"{bug_id_inspect_path}/{bug_id}.txt"
+                    # Delete if exists
+                    if os.path.exists(bug_inspect_file):
+                        os.remove(bug_inspect_file)
+                    bug_id_inspect_result = open(bug_inspect_file, 'a')
+                    bug_id_inspect_result.write(f"####### inspect model-generated code for bug {bug_id} on history heuristic_{history_flag}: {HistoryCategory(history_flag).name} #######\n")
+                    bug_value = bugs_meta_data.get(bug_id)
+                    buggy_code = bug_value['function']['function_before']
+                    ground_fixed_code = bug_value['function']['function_after']
+                    buggy_line_content = bug_value['buggy_line_content']
+                    bug_id_inspect_result.write(f"#1. buggy_line\n{buggy_line_content}\n\n")
+                    bug_id_inspect_result.write(f"#2. buggy code\n{buggy_code}\n\n")
+                    bug_id_inspect_result.write(f"#3. ground fixed code\n{ground_fixed_code}\n\n")
+                    for solution in solution_list:
+                        bug_id_inspect_result.write(f"{solution}\n")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

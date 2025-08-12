@@ -1,0 +1,88 @@
+{
+  "id": "111",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "61f59a02e6043286f0ed62ca00a9be2ce25d7384",
+      "commit_message": "Simplified code, eliminated unecessary parameters in private methods.\n\ngit-svn-id: https://svn.apache.org/repos/asf/jakarta/commons/proper/math/trunk@365298 13f79535-47bb-0310-9956-ffa450edef68",
+      "commit_author": "Phil Steitz",
+      "commit_date": "2006-01-02 05:55:30",
+      "commit_parent": "037327ba193450f1d3b756ec8bce38502be0ff09"
+    },
+    "function": {
+      "function_name": "getSumSquaredErrors",
+      "function_code_before": "public double getSumSquaredErrors() {\n    return getSumSquaredErrors(getSlope());\n}",
+      "function_code_after": "public double getSumSquaredErrors() {\n    return sumYY - sumXY * sumXY / sumXX;\n}",
+      "function_before_start_line": 248,
+      "function_before_end_line": 250,
+      "function_after_start_line": 248,
+      "function_after_end_line": 250,
+      "function_before_token_count": 13,
+      "function_after_token_count": 14,
+      "functions_name_modified_file": [
+        "getRegressionSumSquares",
+        "getSumSquaredErrors",
+        "getSignificance",
+        "clear",
+        "getInterceptStdErr",
+        "getSlopeConfidenceInterval",
+        "predict",
+        "SimpleRegression",
+        "getN",
+        "getIntercept",
+        "getSlope",
+        "getTotalSumSquares",
+        "getR",
+        "getMeanSquareError",
+        "getTDistribution",
+        "getSlopeStdErr",
+        "getRSquare",
+        "addData"
+      ],
+      "functions_name_all_files": [
+        "getRegressionSumSquares",
+        "getSumSquaredErrors",
+        "getSignificance",
+        "clear",
+        "getInterceptStdErr",
+        "getSlopeConfidenceInterval",
+        "predict",
+        "SimpleRegression",
+        "getN",
+        "getIntercept",
+        "getSlope",
+        "getTotalSumSquares",
+        "getR",
+        "getMeanSquareError",
+        "getTDistribution",
+        "getSlopeStdErr",
+        "getRSquare",
+        "addData"
+      ],
+      "functions_name_co_evolved_modified_file": [
+        "getRSquare",
+        "getR",
+        "getSumSquaredErrors"
+      ],
+      "functions_name_co_evolved_all_files": [
+        "getRSquare",
+        "getR",
+        "getSumSquaredErrors"
+      ]
+    },
+    "file": {
+      "file_name": "SimpleRegression.java",
+      "file_nloc": 129,
+      "file_complexity": 31,
+      "file_token_count": 836,
+      "file_before": "",
+      "file_after": "",
+      "file_patch": "@@ -246,7 +246,7 @@ public class SimpleRegression implements Serializable {\n      * @return sum of squared errors associated with the regression model\n      */\n     public double getSumSquaredErrors() {\n-        return getSumSquaredErrors(getSlope());\n+        return sumYY - sumXY * sumXY / sumXX;\n     }\n \n     /**\n@@ -319,7 +319,7 @@ public class SimpleRegression implements Serializable {\n      */\n     public double getR() {\n         double b1 = getSlope();\n-        double result = Math.sqrt(getRSquare(b1));\n+        double result = Math.sqrt(getRSquare());\n         if (b1 < 0) {\n             result = -result;\n         }\n@@ -341,7 +341,8 @@ public class SimpleRegression implements Serializable {\n      * @return r-square\n      */\n     public double getRSquare() {\n-        return getRSquare(getSlope());\n+        double ssto = getTotalSumSquares();\n+        return (ssto - getSumSquaredErrors()) / ssto;\n     }\n \n     /**\n@@ -481,32 +482,6 @@ public class SimpleRegression implements Serializable {\n         return (sumY - slope * sumX) / ((double) n);\n     }\n \n-    /**\n-     * Returns the sum of squared errors associated with the regression \n-     * model, using the slope of the regression line. \n-     * <p> \n-     * Returns NaN if the slope is NaN.\n-     * \n-     * @param b1 current slope\n-     * @return sum of squared errors associated with the regression model\n-     */\n-    private double getSumSquaredErrors(double b1) {\n-        return sumYY - sumXY * sumXY / sumXX;\n-    }\n-\n-    /** \n-     * Computes r-square from the slope.\n-     * <p>\n-     * will return NaN if slope is Nan.\n-     *\n-     * @param b1 current slope\n-     * @return r-square\n-     */\n-    private double getRSquare(double b1) {\n-        double ssto = getTotalSumSquares();\n-        return (ssto - getSumSquaredErrors(b1)) / ssto;\n-    }\n-\n     /**\n      * Computes SSR from b1.\n      * \n",
+      "files_name_in_blame_commit": [
+        "SimpleRegression.java"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 29
+  }
+}

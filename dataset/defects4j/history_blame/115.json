@@ -1,0 +1,67 @@
+{
+  "id": "115",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "a10d9c323124ca47f7d57d4545f4d9f5587f7da5",
+      "commit_message": "Added some code to make it easy for incoming feature (smarter printing verbose types for arguments)\n\n--HG--\nextra : convert_revision : svn%3Aaa2aecf3-ea3e-0410-9d70-716747e7c967/trunk%401473",
+      "commit_author": "Szczepan Faber",
+      "commit_date": "2009-06-05 21:32:41",
+      "commit_parent": "96eb120024a113e4f3a974f4ab98ce8f200232ef"
+    },
+    "function": {
+      "function_name": "toStringEquals",
+      "function_code_before": "",
+      "function_code_after": "private boolean toStringEquals(Matcher m, Object arg) {\n    return StringDescription.toString(m).equals(arg.toString());\n}",
+      "function_before_start_line": "",
+      "function_before_end_line": "",
+      "function_after_start_line": 43,
+      "function_after_end_line": 45,
+      "function_before_token_count": 0,
+      "function_after_token_count": 27,
+      "functions_name_modified_file": [
+        "toStringEquals",
+        "getSuspiciouslyNotMatchingArgs",
+        "safelyMatches"
+      ],
+      "functions_name_all_files": [
+        "toStringEquals",
+        "shouldNotFindAnySuspiciousMatchersWhenNumberOfArgumentsDoesntMatch",
+        "shouldNotFindAnySuspiciousMatchersWhenArgumentsMatch",
+        "shouldUseMatchersSafely",
+        "shouldFindSuspiciousMatchers",
+        "getSuspiciouslyNotMatchingArgs",
+        "safelyMatches"
+      ],
+      "functions_name_co_evolved_modified_file": [
+        "toStringEquals",
+        "getSuspiciouslyNotMatchingArgs",
+        "safelyMatches"
+      ],
+      "functions_name_co_evolved_all_files": [
+        "toStringEquals",
+        "shouldNotFindAnySuspiciousMatchersWhenNumberOfArgumentsDoesntMatch",
+        "shouldUseMatchersSafely",
+        "shouldNotFindAnySuspiciousMatchersWhenArgumentsMatch",
+        "shouldFindSuspiciousMatchers",
+        "getSuspiciouslyNotMatchingArgs",
+        "safelyMatches"
+      ]
+    },
+    "file": {
+      "file_name": "ArgumentMatchingTool.java",
+      "file_nloc": 32,
+      "file_complexity": 8,
+      "file_token_count": 226,
+      "file_before": "",
+      "file_after": "",
+      "file_patch": "@@ -1,13 +1,46 @@\n package org.mockito.internal.verification.argumentmatching;\r\n \r\n+import java.util.LinkedList;\r\n import java.util.List;\r\n \r\n import org.hamcrest.Matcher;\r\n+import org.hamcrest.StringDescription;\r\n \r\n @SuppressWarnings(\"unchecked\")\r\n public class ArgumentMatchingTool {\r\n \r\n+    /**\r\n+     * Suspiciously not matching arguments are those that don't much BUT the toString() representation is the same.\r\n+     * \r\n+     * @param matchers\r\n+     * @param arguments\r\n+     * @return\r\n+     */\r\n     public Matcher[] getSuspiciouslyNotMatchingArgs(List<Matcher> matchers, Object[] arguments) {\r\n-        return new Matcher[0];\r\n+        if (matchers.size() != arguments.length) {\r\n+            return new Matcher[0];\r\n+        }\r\n+        \r\n+        List<Matcher> suspicious = new LinkedList<Matcher>();\r\n+        int i = 0;\r\n+        for (Matcher m : matchers) {\r\n+            if (!safelyMatches(m, arguments[i]) && toStringEquals(m, arguments[i])) {\r\n+                suspicious.add(m);\r\n+            }\r\n+            i++;\r\n+        }\r\n+        return suspicious.toArray(new Matcher[0]);\r\n+    }\r\n+\r\n+    private boolean safelyMatches(Matcher m, Object arg) {\r\n+        try {\r\n+            return m.matches(arg);\r\n+        } catch (Throwable t) {\r\n+            return false;\r\n+        }\r\n+    }\r\n+\r\n+    private boolean toStringEquals(Matcher m, Object arg) {\r\n+        return StringDescription.toString(m).equals(arg.toString());\r\n     }\r\n }\r\n",
+      "files_name_in_blame_commit": [
+        "ArgumentMatchingTool.java",
+        "ArgumentMatchingToolTest.java"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 9
+  }
+}

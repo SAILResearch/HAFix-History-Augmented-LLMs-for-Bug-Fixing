@@ -1,76 +1,92 @@
-import copy
 import json
-import logging
 import os
-import numpy as np
 import subprocess
 import textwrap
-import bugsinpy_command
 from argparse import ArgumentParser
 from datetime import datetime
-
-from util import HistoryCategory, bugs_fail_ground_test
+from dataset_adapter import BugsInPy, Defects4J, DatasetAdapter
+from util import HistoryCategory
 
 CURRENT_DIR_PATH = os.path.abspath(os.path.dirname(__file__))
 PROJECT_DIR_BASE = os.path.abspath(os.path.join(CURRENT_DIR_PATH, '../'))
 MODEL_INFERENCE_BASE_PATH = os.path.abspath(os.path.join(PROJECT_DIR_BASE, 'model_inference'))
-BUGSINPY_PATH = os.path.abspath(os.path.join(PROJECT_DIR_BASE, '../BugsInPy'))
-PROJECTS_BASE_BUGSINPY = os.path.abspath(os.path.join(BUGSINPY_PATH, 'framework/bin/temp/'))
 
-BUG_IDs = {'2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '16', '17', '18', '19', '20', '21', '22', '23', '24',
-           '25', '26', '27', '28', '29', '30', '31', '32', '33', '35', '36', '37', '38', '41', '42', '43', '44', '45',
-           '46', '47', '48', '49', '50', '51', '52', '53', '54', '60', '61', '66', '67', '68'}
 
 def get_parser():
     parser = ArgumentParser()
+    parser.add_argument('--dataset', type=str)
     parser.add_argument('--model_inference_dirs', type=str)
     parser.add_argument('--history_settings', type=str)
-    parser.add_argument('--has_nucleus_sampling', type=str)
+    parser.add_argument('--bug_id_list', type=str, default='')
     return parser
 
 
-args = get_parser().parse_args()
+def adapter_factory(dataset_name):
+    if dataset_name == "bugsinpy":
+        return BugsInPy()
+    elif dataset_name == "defects4j":
+        return Defects4J()
+    else:
+        raise ValueError(f"Unsupported dataset: {dataset_name}")
 
 
 def main():
-    has_nucleus_sampling = bool(int(args.has_nucleus_sampling))
-    if has_nucleus_sampling:
-        k_list = [1, 3, 5, 10]
-    else:
-        k_list = [1]
+    args = get_parser().parse_args()
+    adapter = adapter_factory(args.dataset)
+
+    bug_filter = set(args.bug_id_list.split(',')) if args.bug_id_list else None
 
     evaluate_dir_to_file_dict = {}
     for model_inference_dir in args.model_inference_dirs.split(','):
         evaluate_dir_to_file_dict[model_inference_dir] = {}
         for history_flag in args.history_settings.split(','):
-            path = f"{MODEL_INFERENCE_BASE_PATH}/{model_inference_dir}/{HistoryCategory(history_flag).name}.json"
+            path = f"{MODEL_INFERENCE_BASE_PATH}/{adapter.dataset_name}/{model_inference_dir}/{HistoryCategory(history_flag).name}.json"
             if os.path.exists(path):
                 evaluate_dir_to_file_dict[model_inference_dir][path] = json.load(open(path, 'r'))
     print(f"construct evaluate_dir_to_file_dict length: {len(evaluate_dir_to_file_dict)}")
 
-    bugs_meta_data_file = f"{PROJECT_DIR_BASE}/dataset/bugs_meta_data.json"
+    bugs_meta_data_file = f"{PROJECT_DIR_BASE}/dataset/{adapter.dataset_name}/{adapter.dataset_name}_bugs_meta_data.json"
     bugs_meta_data: dict = json.load(open(bugs_meta_data_file, 'r'))
     ground_error = {}
 
     for bug_id, bug_meta_data in bugs_meta_data.items():
-        # if str(bug_id) == '2':
-        #     break
-        # map the git_project_name and bugsinpy_project_name
+        # debug
+        # if str(bug_id) != '1':
+        #     continue
+
+        if bug_filter and bug_id not in bug_filter:
+            continue
 
         # refactoring to skip the broken cases
-        if str(bug_id) in bugs_fail_ground_test:
+        if adapter.should_skip_bug(bug_id):
             continue
-        bugsinpy_project_name = map_git_to_bugsinpy_project_name(bug_meta_data['project_name'])
-        # 1. setup environment: checkout + compile
-        setup_flag = setup_evaluation(bugsinpy_project_name, bug_meta_data)
-        if setup_flag != "True":
-            ground_error[bug_id] = setup_flag
-            # broken case1: if ground fixed code cannot be checkout or compile, skip
-            print(f"Ground {setup_flag}, skip this broken case: {bug_id}")
+
+        bug_id_key = 'bugsinpy_id' if adapter.dataset_name == 'bugsinpy' else 'defects4j_id'
+        project_name = adapter.map_project_name(bug_meta_data['project_name'])
+        project_checkout_path = adapter.build_project_path(project_name, str(bug_meta_data[bug_id_key]))
+
+        # 1. setup environment: checkout
+        # setup_flag = setup_evaluation(adapter, project_name, str(bug_meta_data[bug_id_key]), project_checkout_path)
+        # First checkout teh project to bug-fixing snapshot
+        checkout_flag = adapter.checkout(project_name, str(bug_meta_data[bug_id_key]), project_checkout_path)
+        print(f"after checkout, the current working directory is: {os.getcwd()}")
+        if not checkout_flag:
+            ground_error[bug_id] = 'Error: checkout'
+            print(f"Ground {ground_error[bug_id]}, skip this broken case: {bug_id}")
             continue
-        # 2. test ground fixed code
-        test_ground_flag = execution_tests_ground(bugsinpy_project_name)
-        if test_ground_flag != 'Pass':
+
+        # 2. setup environment: compile
+        # Bugsinpy will checkout to project_checkout_path + project name, different with Defects4J
+        project_checkout_path = os.path.join(project_checkout_path, project_name) if adapter.dataset_name == 'bugsinpy' else project_checkout_path
+        compile_flag = adapter.compile(project_checkout_path)
+        if not compile_flag:
+            ground_error[bug_id] = 'Error: compile'
+            print(f"Ground {ground_error[bug_id]}, skip this broken case: {bug_id}")
+            continue
+
+        # 3. test ground fixed code
+        test_ground_flag = adapter.test(project_checkout_path)
+        if test_ground_flag != 'Plausible':
             ground_error[bug_id] = test_ground_flag
             # broken case2: if ground fixed code cannot pass test cases, skip
             print(f"Ground {test_ground_flag}, skip this broken case: {bug_id}")
@@ -78,12 +94,10 @@ def main():
         print("The ground fixed code pass the test case, continue evaluating model's code!")
         print("===========================================================================\n\n")
 
-        # need to consider running test for all settings, to reduce the time-consuming checkout/compile
-        # 3. start calculating pass@k
+        # 4. test model-generated code
         # For each code evaluation: will return 'Error: empty', 'Fail', 'Error: test', 'Pass'
-
         for model_inference_dir, path_file_dict in evaluate_dir_to_file_dict.items():
-            _evaluate_path = f"{CURRENT_DIR_PATH}/{model_inference_dir}"
+            _evaluate_path = f"{CURRENT_DIR_PATH}/{adapter.dataset_name}/{model_inference_dir}"
             os.makedirs(_evaluate_path, exist_ok=True)
             for path, model_inference_json in path_file_dict.items():
 
@@ -93,7 +107,7 @@ def main():
 
                 # create the evaluation result files
                 name_suf = os.path.split(path)[1].split('.json')[0]
-                evaluate_path = f"{_evaluate_path}/unittest_result_{name_suf}.json"
+                evaluate_path = f"{_evaluate_path}/unittest_result_{name_suf}_{bug_id}.json"
                 # if os.path.exists(evaluate_path):
                 #     os.remove(evaluate_path)
                 pass_k_result_path = f"{_evaluate_path}/pass_k_result_{name_suf}.txt"
@@ -103,42 +117,25 @@ def main():
                 pass_k_result = open(pass_k_result_path, 'a')
                 # pass_k_result.write(f"{current_time()}: Start evaluation\n")
                 pass_k_result.write("=========================================\n")
-                print(f"{current_time()}: Start evaluation\n")
-                result_bug_id = {}
-                if 1 in k_list:
-                    # when k=1, using greedy search result
+                result_bug_id = {'nucleus_sampling': inference_value['output']['nucleus_sampling'],
+                                 'nucleus_sampling_flags': []}
+                print(f"{current_time()} Start evaluation: {adapter.dataset_name}, {model_inference_dir}, heuristic_{HistoryCategory[name_suf].value}")
+                # if len(set(k_list)) > 1:
+                # when k has more than one value, using nucleus sampling result
+                for index, nucleus_inference_code in enumerate(result_bug_id['nucleus_sampling']):
+                    if nucleus_inference_code is None or nucleus_inference_code == "":
+                        result_bug_id['nucleus_sampling_flags'].append('Error: empty')
+                        continue
+                    test_flag_n = execution_tests(adapter, project_checkout_path, bug_meta_data, nucleus_inference_code)
+                    print(f'[{index+1}] bug {bug_id} testing result: {project_name}-{bug_meta_data[bug_id_key]}, {test_flag_n}')
+                    result_bug_id['nucleus_sampling_flags'].append(test_flag_n)
 
-                    inference_code = inference_value['output']['greedy_search']
-                    if inference_code is None or inference_code == "":
-                        result_bug_id['greedy_search_flag'] = 'Error: empty'
-                    else:
-                        test_flag_g = execution_tests(bugsinpy_project_name, bug_meta_data, inference_code)
-                        result_bug_id['greedy_search_flag'] = test_flag_g
-                    result_bug_id['greedy_search'] = inference_code
-                    print("------------------------------greedy search result------------------------------")
-                    print(
-                        f"{current_time()}, bug id {bug_id}, by greedy_search, unittest result: {result_bug_id['greedy_search_flag']}\n")
-                    pass_k_result.write(
-                        f"{current_time()}, bug id {bug_id}, by greedy_search, unittest result: {result_bug_id['greedy_search_flag']}\n")
-                    print("--------------------------------------------------------------------------------\n")
-
-                if len(set(k_list)) > 1:
-                    # when k has more than one value, using nucleus sampling result
-                    result_bug_id['nucleus_sampling'] = inference_value['output']['nucleus_sampling']
-                    result_bug_id['nucleus_sampling_flags'] = []
-                    for nucleus_inference_code in result_bug_id['nucleus_sampling']:
-                        if nucleus_inference_code is None or nucleus_inference_code == "":
-                            result_bug_id['nucleus_sampling_flags'].append('Error: empty')
-                            continue
-                        test_flag_n = execution_tests(bugsinpy_project_name, bug_meta_data, nucleus_inference_code)
-                        result_bug_id['nucleus_sampling_flags'].append(test_flag_n)
-
-                    print("------------------------------nucleus sampling result------------------------------")
-                    print(
-                        f"{current_time()}, bug id {bug_id}, by nucleus_sampling, unittest result: {result_bug_id['nucleus_sampling_flags']}\n")
-                    pass_k_result.write(
-                        f"{current_time()}, bug id {bug_id}, by nucleus_sampling, unittest result: {result_bug_id['nucleus_sampling_flags']}\n")
-                    print("------------------------------nucleus sampling result------------------------------\n")
+                print("------------------------------nucleus sampling result------------------------------")
+                print(
+                    f"{current_time()} bug id {bug_id} {project_name}-{bug_meta_data[bug_id_key]}, by nucleus_sampling, unittest result:\n{result_bug_id['nucleus_sampling_flags']}\n")
+                pass_k_result.write(
+                    f"{current_time()} bug id {bug_id} {project_name}-{bug_meta_data[bug_id_key]}, by nucleus_sampling, unittest result:\n{result_bug_id['nucleus_sampling_flags']}\n")
+                print("------------------------------nucleus sampling result------------------------------\n")
                 pass_k_result.close()
 
                 a_new_result = {bug_id: result_bug_id}
@@ -152,151 +149,84 @@ def main():
                     with open(evaluate_path, 'w') as evaluate_file_exist:
                         json.dump(result, evaluate_file_exist, indent=2)
                     evaluate_file_exist.close()
+
+    # # clean the checkout path
+    # adapter.clean_checkout_dir()
+
     print(f"The bugs who cannot pass the ground test is: {ground_error}\n")
-    print(f"ALL unittest finished! Start calculating pass@k!")
-
-    for model_inference_dir, path_file_dict in evaluate_dir_to_file_dict.items():
-        _evaluate_path = f"{CURRENT_DIR_PATH}/{model_inference_dir}"
-        for path, _ in path_file_dict.items():
-            # create the evaluation result files
-            name_suf = os.path.split(path)[1].split('.json')[0]
-            evaluate_path = f"{_evaluate_path}/unittest_result_{name_suf}.json"
-
-            # calculate pass@k, when k=5 or 10, using nucleus sampling
-            result_ = evaluate_average_pass_at_k(evaluate_path, k_list)
-            print(f'Evaluating pass_at_k result: {result_}\n')
-
-            pass_k_result_path = f"{_evaluate_path}/pass_k_result_{name_suf}.txt"
-            pass_k_result = open(pass_k_result_path, 'a')
-            pass_k_result.write(f"The bugs who cannot pass the ground test is: {ground_error}\n")
-            pass_k_result.write(f'pass_at_k_final: {result_}\n')
-            pass_k_result.close()
+    print(f"ALL unittest finished!")
 
 
-def execution_tests(bugsinpy_project_name, bug_id_meta_data, inference_code) -> str:
+def execution_tests(adapter: DatasetAdapter, project_path, bug_meta_data, inference_code) -> str:
     # First backup the original file and inject the model-generated code
     try:
-        project_path = os.path.join(PROJECTS_BASE_BUGSINPY, bugsinpy_project_name)
-        target_file_path = os.path.join(project_path, bug_id_meta_data['file']['file_path'])
-        head_tail = os.path.split(target_file_path)
-        target_file_path_backup = os.path.join(head_tail[0], 'backup_' + head_tail[1])
+        target_file_path = os.path.join(project_path, bug_meta_data['file']['file_path'])
+        # head_tail = os.path.split(target_file_path)
+        # target_file_path_backup = os.path.join(head_tail[0], 'backup_' + head_tail[1])
+        target_file_path_backup = target_file_path + '.backup'
 
         # rename the original completion file as tmp_completion
         subprocess.run(['cp', target_file_path, target_file_path_backup])
 
-        function_start = bug_id_meta_data['function']['function_after_start_line']
-        function_end = bug_id_meta_data['function']['function_after_end_line']
-        # write the new completion file
+        function_start = bug_meta_data['function']['function_after_start_line']
+        function_end = bug_meta_data['function']['function_after_end_line']
+
+        # Handle Defects4J special cases verified by defects4j_function_location_verify.py
+        if adapter.dataset_name == "defects4j":
+            function_start, function_end = handle_defects4j_special_cases(
+                bug_meta_data, function_start, function_end
+            )
+
         old_file_lines = []
-        with open(target_file_path, 'r') as f:
+        with open(target_file_path, 'r', encoding='utf-8') as f:
             for line in f:
                 old_file_lines.append(line)
         start_line = old_file_lines[function_start - 1]
         lstrip_start_line = start_line.lstrip(" ")
         start_indent = len(start_line) - len(lstrip_start_line)
         inference_code_indent = adjust_indent(inference_code, start_indent)
-
-        new_file_lines = old_file_lines[:function_start - 1] + ['\n', inference_code_indent, '\n'] + old_file_lines[
-                                                                                                     function_end:]
-        with open(target_file_path, 'w') as f:
+        # print(f'function_start: {function_start}\nstart_line: {start_line}\nlast sentence: {old_file_lines[:function_start - 1][len(old_file_lines[:function_start - 1])-1]}\n')
+        # print(f'inference_code:\n{inference_code}\ninference_code_indent: \n{inference_code_indent}\n')
+        new_file_lines = old_file_lines[:function_start - 1] + [inference_code_indent, '\n'] + old_file_lines[function_end:]
+        with open(target_file_path, 'w', encoding='utf-8') as f:
             # f.writelines(file_lines)
             f.write(''.join(new_file_lines))
     except Exception as e:
         print(f"Meet error when execute test:\n{e}")
+        subprocess.run(['mv', target_file_path_backup, target_file_path])
         return 'Error: before test'
 
     # Run the test case
     try:
-        test_flag = bugsinpy_command.bugsinpy_test(project_path)
+        test_flag = adapter.test(project_path)
     except:
         # restore the original file status
         subprocess.run(['mv', target_file_path_backup, target_file_path])
         return 'Error: test'
     # restore the original file status
     subprocess.run(['mv', target_file_path_backup, target_file_path])
-    return 'Pass' if test_flag else 'Fail'
+    return 'Pass' if test_flag == 'Plausible' else 'Fail'
 
 
-def execution_tests_ground(bugsinpy_project_name):
-    project_path = os.path.join(PROJECTS_BASE_BUGSINPY, bugsinpy_project_name)
-    # Run the test case
-    try:
-        test_flag = bugsinpy_command.bugsinpy_test(project_path)
-    except:
-        return 'Error: test'
-    return 'Pass' if test_flag else 'Fail'
-
-
-def setup_evaluation(bugsinpy_project_name, bug_id_meta_data) -> str:
+def setup_evaluation(adapter: DatasetAdapter, project_name, dataset_bug_id, project_path) -> str:
     # First checkout teh project to bug-fixing snapshot
     try:
-        checkout_flag = bugsinpy_command.bugsinpy_checkout(bugsinpy_project_name, bug_id_meta_data['bugsinpy_id'])
-    except:
+        checkout_flag = adapter.checkout(project_name, dataset_bug_id, project_path)
+        print(f"after checkout, the current working directory is: {os.getcwd()}")
+    except Exception as e:
+        print(f"Meet error when checkout:\n{e}")
         return 'Error: checkout'
     if not checkout_flag:
         return 'Error: checkout'
 
-    project_path = os.path.join(PROJECTS_BASE_BUGSINPY, bugsinpy_project_name)
     try:
-        compile_flag = bugsinpy_command.bugsinpy_compile(project_path)
-    except:
+        compile_flag = adapter.compile(project_path)
+    except Exception as e:
+        print(f"Meet error when compile:\n{e}")
         return 'Error: compile'
     if not compile_flag:
         return 'Error: compile'
     return "True"
-
-
-def evaluate_average_pass_at_k(eval_result_path, k_list):
-    pass_at_k_result = {}
-    eval_result_json: dict = json.load(open(eval_result_path, 'r'))
-    if 1 in k_list:
-        # first calculate pass@1 for greedy search
-        n = 1
-        k = 1
-        greedy_passed = {}
-        for bug_id_ in BUG_IDs:
-            greedy_passed[bug_id_] = 0
-        for bug_id, eval_result in eval_result_json.items():
-            # if bug_id not in greedy_passed:
-            #     greedy_passed[bug_id] = 0
-            if eval_result['greedy_search_flag'] == 'Pass':
-                greedy_passed[bug_id] += 1
-        pass_at_k = np.mean([compute_pass_at_k(n, pass_num, k) for _, pass_num in greedy_passed.items()])
-        # pass_at_k_result[f"pass@{k}"] = f"{pass_at_k * 100}%"
-        pass_at_k_result[f"pass@{k}"] = "{:.2%}".format(round(pass_at_k, 4))
-
-    if len(set(k_list)) > 1:
-        # second calculate pass@k for nucleus sampling
-        k_list_temp = copy.deepcopy(k_list)
-        while 1 in k_list_temp:
-            k_list_temp.remove(1)
-        n = 10
-        neucleus_passed = {}
-        for bug_id_ in BUG_IDs:
-            neucleus_passed[bug_id_] = 0
-        for bug_id, eval_result in eval_result_json.items():
-            # if bug_id not in neucleus_passed:
-            #     neucleus_passed[bug_id] = 0
-            for value in eval_result['nucleus_sampling_flags']:
-                if value == 'Pass':
-                    neucleus_passed[bug_id] += 1
-        for k in k_list_temp:
-            pass_at_k = np.mean([compute_pass_at_k(n, pass_num, k) for _, pass_num in neucleus_passed.items()])
-            # pass_at_k_result[f"pass@{k}"] = f"{pass_at_k * 100}%"
-            pass_at_k_result[f"pass@{k}"] = "{:.2%}".format(round(pass_at_k, 4))
-    return pass_at_k_result
-
-
-def compute_pass_at_k(n, c, k):
-    """
-    n: total number of completions per task
-    c: number of completions that pass all tests
-    k: k in pass_at_k
-    """
-    if n - c < k:
-        return 1
-    else:
-        return 1.0 - np.prod(1.0 - k / np.arange(n - c + 1, n + 1))
 
 
 def adjust_indent(code, new_indent):
@@ -307,27 +237,25 @@ def adjust_indent(code, new_indent):
     return indented_code
 
 
-def map_git_to_bugsinpy_project_name(git_project_name: str):
-    if git_project_name == "cli":
-        bugsinpy_project_name = "httpie"
-    elif git_project_name == "spaCy":
-        bugsinpy_project_name = "spacy"
-    else:
-        bugsinpy_project_name = git_project_name
-    return bugsinpy_project_name
-
-
 def current_time():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-def command(cmd):
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    output, err = process.communicate()
-    if output != b'' or err != b'':
-        print(output)
-        print(err)
-    return output, err
+def handle_defects4j_special_cases(bug_meta_data, default_start, default_end):
+    """Handle hardcoded function ranges for known Defects4J special cases."""
+    project = bug_meta_data.get("project_name")
+    defects4j_bug_id = str(bug_meta_data.get("defects4j_id"))
+
+    if project == "jfreechart":
+        special_cases = {
+            "1": (1790, 1822),
+            "9": (918, 956),
+            "12": (143, 158),
+            "13": (422, 489),
+            "24": (123, 129),
+        }
+        return special_cases.get(defects4j_bug_id, (default_start, default_end))
+    return default_start, default_end
 
 
 if __name__ == '__main__':

@@ -1,0 +1,115 @@
+{
+  "id": "2",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "f46894432122e6c7ee07cbe65fa439499de8e2e0",
+      "commit_message": "2007-08-28  David Gilbert  <david.gilbert@object-refinery.com>\n\n\t* source/org/jfree/data/time/Week.java\n\t(Week(Date, TimeZone)): Deprecated,\n\t(Week(Date, TimeZone, Locale)): New constructor,\n\t* tests/org/jfree/data/time/junit/WeekTests.java\n\t(testConstructor): New test.",
+      "commit_author": "David Gilbert",
+      "commit_date": "2007-08-28 15:55:23",
+      "commit_parent": "1c867e3566c052eb33e9c7383f8003f961ce13ed"
+    },
+    "function": {
+      "function_name": "Week",
+      "function_code_before": "public Week(Date time, TimeZone zone) {\n    if (time == null) {\n        throw new IllegalArgumentException(\"Null 'time' argument.\");   \n    }\n    if (zone == null) {\n        throw new IllegalArgumentException(\"Null 'zone' argument.\");   \n    }\n    Calendar calendar = Calendar.getInstance(zone);\n    calendar.setTime(time);\n\n    // sometimes the last few days of the year are considered to fall in \n    // the *first* week of the following year.  Refer to the Javadocs for \n    // GregorianCalendar.\n    int tempWeek = calendar.get(Calendar.WEEK_OF_YEAR);\n    if (tempWeek == 1 \n            && calendar.get(Calendar.MONTH) == Calendar.DECEMBER) {\n        this.week = 1;\n        this.year = (short) (calendar.get(Calendar.YEAR) + 1);\n    }\n    else {\n        this.week = (byte) Math.min(tempWeek, LAST_WEEK_IN_YEAR);\n        int yyyy = calendar.get(Calendar.YEAR);\n        // alternatively, sometimes the first few days of the year are\n        // considered to fall in the *last* week of the previous year...\n        if (calendar.get(Calendar.MONTH) == Calendar.JANUARY \n                && this.week >= 52) {\n            yyyy--; \n        }\n        this.year = (short) yyyy;\n    }\n    peg(calendar);\n\n}",
+      "function_code_after": "public Week(Date time, TimeZone zone) {\n    // defer argument checking...\n    this(time, RegularTimePeriod.DEFAULT_TIME_ZONE, Locale.getDefault());\n}",
+      "function_before_start_line": 169,
+      "function_before_end_line": 201,
+      "function_after_start_line": 174,
+      "function_after_end_line": 177,
+      "function_before_token_count": 187,
+      "function_after_token_count": 25,
+      "functions_name_modified_file": [
+        "compareTo",
+        "getLastMillisecond",
+        "parseWeek",
+        "toString",
+        "next",
+        "findSeparator",
+        "Week",
+        "peg",
+        "getSerialIndex",
+        "getFirstMillisecond",
+        "equals",
+        "stringToWeek",
+        "evaluateAsYear",
+        "previous",
+        "hashCode",
+        "getYear",
+        "getWeek",
+        "getYearValue"
+      ],
+      "functions_name_all_files": [
+        "parseWeek",
+        "toString",
+        "testNext",
+        "testW52Y9999Next",
+        "getSerialIndex",
+        "getFirstMillisecond",
+        "stringToWeek",
+        "previous",
+        "hashCode",
+        "getYear",
+        "testWeek532005",
+        "testBug1498805",
+        "getYearValue",
+        "compareTo",
+        "testW1Y1900Next",
+        "testGetSerialIndex",
+        "testBug1448828",
+        "testHashcode",
+        "setUp",
+        "getWeek",
+        "getLastMillisecond",
+        "testEquals",
+        "findSeparator",
+        "testWeek12005",
+        "evaluateAsYear",
+        "testConstructor",
+        "testGetLastMillisecondWithTimeZone",
+        "testNotCloneable",
+        "testGetLastMillisecond",
+        "testW1Y1900Previous",
+        "suite",
+        "testGetFirstMillisecond",
+        "testGetLastMillisecondWithCalendar",
+        "next",
+        "WeekTests",
+        "testW52Y9999Previous",
+        "Week",
+        "equals",
+        "testGetStart",
+        "testGetFirstMillisecondWithCalendar",
+        "testSerialization",
+        "testGetFirstMillisecondWithTimeZone",
+        "peg",
+        "testGetEnd"
+      ],
+      "functions_name_co_evolved_modified_file": [
+        "Week",
+        "parseWeek"
+      ],
+      "functions_name_co_evolved_all_files": [
+        "testSerialization",
+        "testConstructor",
+        "Week",
+        "parseWeek"
+      ]
+    },
+    "file": {
+      "file_name": "Week.java",
+      "file_nloc": 279,
+      "file_complexity": 61,
+      "file_token_count": 1725,
+      "file_before": "",
+      "file_after": "",
+      "file_patch": "@@ -65,6 +65,8 @@\n  * 05-Oct-2006 : Updated API docs (DG);\r\n  * 06-Oct-2006 : Refactored to cache first and last millisecond values (DG);\r\n  * 09-Jan-2007 : Fixed bug in next() (DG);\r\n+ * 28-Aug-2007 : Added new constructor to avoid problem in creating new \r\n+ *               instances (DG);\r\n  *\r\n  */\r\n \r\n@@ -73,6 +75,7 @@ package org.jfree.data.time;\n import java.io.Serializable;\r\n import java.util.Calendar;\r\n import java.util.Date;\r\n+import java.util.Locale;\r\n import java.util.TimeZone;\r\n \r\n /**\r\n@@ -156,7 +159,7 @@ public class Week extends RegularTimePeriod implements Serializable {\n      */\r\n     public Week(Date time) {\r\n         // defer argument checking...\r\n-        this(time, RegularTimePeriod.DEFAULT_TIME_ZONE);\r\n+        this(time, RegularTimePeriod.DEFAULT_TIME_ZONE, Locale.getDefault());\r\n     }\r\n \r\n     /**\r\n@@ -165,15 +168,35 @@ public class Week extends RegularTimePeriod implements Serializable {\n      *\r\n      * @param time  the date/time (<code>null</code> not permitted).\r\n      * @param zone  the time zone (<code>null</code> not permitted).\r\n+     * \r\n+     * @deprecated As of 1.0.7, use {@link #Week(Date, TimeZone, Locale)}.\r\n      */\r\n     public Week(Date time, TimeZone zone) {\r\n+        // defer argument checking...\r\n+        this(time, RegularTimePeriod.DEFAULT_TIME_ZONE, Locale.getDefault());\r\n+    }\r\n+    \r\n+    /**\r\n+     * Creates a time period for the week in which the specified date/time \r\n+     * falls, calculated relative to the specified time zone.\r\n+     *\r\n+     * @param time  the date/time (<code>null</code> not permitted).\r\n+     * @param zone  the time zone (<code>null</code> not permitted).\r\n+     * @param locale  the locale (<code>null</code> not permitted).\r\n+     * \r\n+     * @since 1.0.7\r\n+     */\r\n+    public Week(Date time, TimeZone zone, Locale locale) {\r\n         if (time == null) {\r\n             throw new IllegalArgumentException(\"Null 'time' argument.\");   \r\n         }\r\n         if (zone == null) {\r\n             throw new IllegalArgumentException(\"Null 'zone' argument.\");   \r\n         }\r\n-        Calendar calendar = Calendar.getInstance(zone);\r\n+        if (locale == null) {\r\n+            throw new IllegalArgumentException(\"Null 'locale' argument.\");\r\n+        }\r\n+        Calendar calendar = Calendar.getInstance(zone, locale);\r\n         calendar.setTime(time);\r\n \r\n         // sometimes the last few days of the year are considered to fall in \r\n@@ -197,7 +220,6 @@ public class Week extends RegularTimePeriod implements Serializable {\n             this.year = (short) yyyy;\r\n         }\r\n         peg(calendar);\r\n-\r\n     }\r\n \r\n     /**\r\n@@ -522,8 +544,7 @@ public class Week extends RegularTimePeriod implements Serializable {\n                     w = Week.stringToWeek(s2);\r\n                     if (w == -1) {\r\n                         throw new TimePeriodFormatException(\r\n-                            \"Can't evaluate the week.\"\r\n-                        );\r\n+                                \"Can't evaluate the week.\");\r\n                     }\r\n                     result = new Week(w, y);\r\n                 }\r\n@@ -533,23 +554,20 @@ public class Week extends RegularTimePeriod implements Serializable {\n                         w = Week.stringToWeek(s1);\r\n                         if (w == -1) {\r\n                             throw new TimePeriodFormatException(\r\n-                                \"Can't evaluate the week.\"\r\n-                            );\r\n+                                    \"Can't evaluate the week.\");\r\n                         }\r\n                         result = new Week(w, y);\r\n                     }\r\n                     else {\r\n                         throw new TimePeriodFormatException(\r\n-                            \"Can't evaluate the year.\"\r\n-                        );\r\n+                                \"Can't evaluate the year.\");\r\n                     }\r\n                 }\r\n \r\n             }\r\n             else {\r\n                 throw new TimePeriodFormatException(\r\n-                    \"Could not find separator.\"\r\n-                );\r\n+                        \"Could not find separator.\");\r\n             }\r\n \r\n         }\r\n",
+      "files_name_in_blame_commit": [
+        "Week.java",
+        "WeekTests.java"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 4
+  }
+}

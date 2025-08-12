@@ -1,0 +1,122 @@
+{
+  "id": "63",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "a569a1551c480190dcd54952b2123b9dd4219c46",
+      "commit_message": "minor refactoring",
+      "commit_author": "Tatu Saloranta",
+      "commit_date": "2014-01-02 22:43:15",
+      "commit_parent": "4a74985b4244caa20711fef837ce6387096d7a97"
+    },
+    "function": {
+      "function_name": "forType",
+      "function_code_before": "public static StdKeyDeserializer forType(Class<?> raw)\n{\n    int kind;\n    FromStringDeserializer<?> deser = null;\n\n    // first common types:\n    if (raw == UUID.class) {\n        kind = TYPE_UUID;\n    } else if (raw == Integer.class) {\n        kind = TYPE_INT;\n    } else if (raw == Long.class) {\n        kind = TYPE_LONG;\n    } else if (raw == Date.class) {\n        kind = TYPE_DATE;\n    } else if (raw == Calendar.class) {\n        kind = TYPE_CALENDAR;\n    // then less common ones...\n    } else if (raw == Boolean.class) {\n        kind = TYPE_BOOLEAN;\n    } else if (raw == Byte.class) {\n        kind = TYPE_BYTE;\n    } else if (raw == Character.class) {\n        kind = TYPE_CHAR;\n    } else if (raw == Short.class) {\n        kind = TYPE_SHORT;\n    } else if (raw == Float.class) {\n        kind = TYPE_FLOAT;\n    } else if (raw == Double.class) {\n        kind = TYPE_DOUBLE;\n    } else if (raw == Locale.class) {\n        kind = TYPE_LOCALE;\n        deser = FromStringDeserializer.findDeserializer(Locale.class);\n    } else {\n        return null;\n    }\n    return new StdKeyDeserializer(kind, raw, deser);\n}",
+      "function_code_after": "public static StdKeyDeserializer forType(Class<?> raw)\n{\n    int kind;\n\n    // first common types:\n    if (raw == String.class || raw == Object.class) {\n        return StringKD.forType(raw);\n    } else if (raw == UUID.class) {\n        kind = TYPE_UUID;\n    } else if (raw == Integer.class) {\n        kind = TYPE_INT;\n    } else if (raw == Long.class) {\n        kind = TYPE_LONG;\n    } else if (raw == Date.class) {\n        kind = TYPE_DATE;\n    } else if (raw == Calendar.class) {\n        kind = TYPE_CALENDAR;\n    // then less common ones...\n    } else if (raw == Boolean.class) {\n        kind = TYPE_BOOLEAN;\n    } else if (raw == Byte.class) {\n        kind = TYPE_BYTE;\n    } else if (raw == Character.class) {\n        kind = TYPE_CHAR;\n    } else if (raw == Short.class) {\n        kind = TYPE_SHORT;\n    } else if (raw == Float.class) {\n        kind = TYPE_FLOAT;\n    } else if (raw == Double.class) {\n        kind = TYPE_DOUBLE;\n    } else if (raw == Locale.class) {\n        FromStringDeserializer<?> deser = FromStringDeserializer.findDeserializer(Locale.class);\n        return new StdKeyDeserializer(TYPE_LOCALE, raw, deser);\n    } else {\n        return null;\n    }\n    return new StdKeyDeserializer(kind, raw);\n}",
+      "function_before_start_line": 59,
+      "function_before_end_line": 95,
+      "function_after_start_line": 63,
+      "function_after_end_line": 100,
+      "function_before_token_count": 224,
+      "function_after_token_count": 250,
+      "functions_name_modified_file": [
+        "StringFactoryKeyDeserializer",
+        "_parseLong",
+        "StdKeyDeserializer",
+        "_parseInt",
+        "_parse",
+        "_parseDouble",
+        "StringKD",
+        "EnumKD",
+        "StringCtorKeyDeserializer",
+        "forType",
+        "deserializeKey",
+        "DelegatingKD",
+        "getKeyClass"
+      ],
+      "functions_name_all_files": [
+        "canInstantiate",
+        "_parse",
+        "_parseDouble",
+        "StringKD",
+        "canCreateFromBoolean",
+        "EnumKD",
+        "createUsingDelegate",
+        "canCreateFromDouble",
+        "getWithArgsCreator",
+        "_parseLong",
+        "createFromDouble",
+        "createFromLong",
+        "createUsingDefault",
+        "StringCtorKeyDeserializer",
+        "findStringBasedKeyDeserializer",
+        "canCreateFromString",
+        "createFromBoolean",
+        "createFromObjectWith",
+        "getFromObjectArguments",
+        "canCreateFromLong",
+        "DelegatingKD",
+        "constructEnumKeyDeserializer",
+        "StdKeyDeserializer",
+        "getDelegateCreator",
+        "constructDelegatingKeyDeserializer",
+        "createFromString",
+        "getDelegateType",
+        "createFromInt",
+        "canCreateFromInt",
+        "forType",
+        "getIncompleteParameter",
+        "StringFactoryKeyDeserializer",
+        "_parseInt",
+        "canCreateFromObjectWith",
+        "canCreateUsingDefault",
+        "findKeyDeserializer",
+        "getDefaultCreator",
+        "deserializeKey",
+        "canCreateUsingDelegate",
+        "getKeyClass"
+      ],
+      "functions_name_co_evolved_modified_file": [
+        "forType"
+      ],
+      "functions_name_co_evolved_all_files": [
+        "canInstantiate",
+        "canCreateFromBoolean",
+        "createUsingDelegate",
+        "canCreateFromDouble",
+        "getWithArgsCreator",
+        "canCreateFromString",
+        "createFromObjectWith",
+        "getFromObjectArguments",
+        "canCreateFromLong",
+        "getDelegateCreator",
+        "getDelegateType",
+        "canCreateFromInt",
+        "forType",
+        "getIncompleteParameter",
+        "canCreateFromObjectWith",
+        "canCreateUsingDefault",
+        "findKeyDeserializer",
+        "getDefaultCreator",
+        "constructStringKeyDeserializer",
+        "canCreateUsingDelegate"
+      ]
+    },
+    "file": {
+      "file_name": "StdKeyDeserializer.java",
+      "file_nloc": 273,
+      "file_complexity": 70,
+      "file_token_count": 1711,
+      "file_before": "",
+      "file_after": "",
+      "file_patch": "@@ -17,7 +17,11 @@ import com.fasterxml.jackson.databind.util.ClassUtil;\n import com.fasterxml.jackson.databind.util.EnumResolver;\n \n /**\n- * Base class for simple key deserializers.\n+ * Default {@link KeyDeserializer} implementation used for most {@link java.util.Map}\n+ * types Jackson supports.\n+ * Implemented as \"chameleon\" (or swiss pocket knife) class; not particularly elegant,\n+ * but helps reduce number of classes and jar size (class metadata adds significant\n+ * per-class overhead; much more than bytecode).\n  */\n @JacksonStdImpl\n public class StdKeyDeserializer extends KeyDeserializer\n@@ -59,10 +63,11 @@ public class StdKeyDeserializer extends KeyDeserializer\n     public static StdKeyDeserializer forType(Class<?> raw)\n     {\n         int kind;\n-        FromStringDeserializer<?> deser = null;\n \n         // first common types:\n-        if (raw == UUID.class) {\n+        if (raw == String.class || raw == Object.class) {\n+            return StringKD.forType(raw);\n+        } else if (raw == UUID.class) {\n             kind = TYPE_UUID;\n         } else if (raw == Integer.class) {\n             kind = TYPE_INT;\n@@ -86,12 +91,12 @@ public class StdKeyDeserializer extends KeyDeserializer\n         } else if (raw == Double.class) {\n             kind = TYPE_DOUBLE;\n         } else if (raw == Locale.class) {\n-            kind = TYPE_LOCALE;\n-            deser = FromStringDeserializer.findDeserializer(Locale.class);\n+            FromStringDeserializer<?> deser = FromStringDeserializer.findDeserializer(Locale.class);\n+            return new StdKeyDeserializer(TYPE_LOCALE, raw, deser);\n         } else {\n             return null;\n         }\n-        return new StdKeyDeserializer(kind, raw, deser);\n+        return new StdKeyDeserializer(kind, raw);\n     }\n     \n     @Override\n",
+      "files_name_in_blame_commit": [
+        "StdKeyDeserializers.java",
+        "ValueInstantiator.java",
+        "StdKeyDeserializer.java"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 22
+  }
+}

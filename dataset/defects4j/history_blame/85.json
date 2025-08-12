@@ -1,0 +1,98 @@
+{
+  "id": "85",
+  "blame_commit": {
+    "commit": {
+      "commit_id": "61cccd3e0a4cc51c0956ca90310c8b76d4f6fdeb",
+      "commit_message": "Add methods to compare dates and calendars in different ways\nbased on bug 26922\n\n\ngit-svn-id: https://svn.apache.org/repos/asf/jakarta/commons/proper/lang/trunk@137982 13f79535-47bb-0310-9956-ffa450edef68",
+      "commit_author": "Stephen Colebourne",
+      "commit_date": "2004-10-16 17:08:42",
+      "commit_parent": "4ef9502e78178cea5bf8c633816a695d88450b48"
+    },
+    "function": {
+      "function_name": "isSameLocalTime",
+      "function_code_before": "",
+      "function_code_after": "public static boolean isSameLocalTime(Calendar cal1, Calendar cal2) {\n    if (cal1 == null || cal2 == null) {\n        throw new IllegalArgumentException(\"The date must not be null\");\n    }\n    return (cal1.get(Calendar.MILLISECOND) == cal2.get(Calendar.MILLISECOND) &&\n            cal1.get(Calendar.SECOND) == cal2.get(Calendar.SECOND) &&\n            cal1.get(Calendar.MINUTE) == cal2.get(Calendar.MINUTE) &&\n            cal1.get(Calendar.HOUR) == cal2.get(Calendar.HOUR) &&\n            cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR) &&\n            cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&\n            cal1.get(Calendar.ERA) == cal2.get(Calendar.ERA) &&\n            cal1.getClass() == cal2.getClass());\n}",
+      "function_before_start_line": "",
+      "function_before_end_line": "",
+      "function_after_start_line": 217,
+      "function_after_end_line": 229,
+      "function_before_token_count": 0,
+      "function_after_token_count": 170,
+      "functions_name_modified_file": [
+        "round",
+        "modify",
+        "isSameDay",
+        "truncate",
+        "next",
+        "DateUtils",
+        "isSameInstant",
+        "iterator",
+        "hasNext",
+        "isSameLocalTime",
+        "DateIterator",
+        "remove"
+      ],
+      "functions_name_all_files": [
+        "isSameDay",
+        "testIsSameLocalTime_Cal",
+        "DateUtils",
+        "testRound",
+        "testIsSameInstant_Date",
+        "isSameLocalTime",
+        "round",
+        "testTruncate",
+        "truncate",
+        "assertWeekIterator",
+        "testMonthIterator",
+        "hasNext",
+        "main",
+        "setUp",
+        "modify",
+        "assertEquals",
+        "remove",
+        "isSameInstant",
+        "iterator",
+        "testConstructor",
+        "suite",
+        "testIsSameDay_Cal",
+        "DateIterator",
+        "testIteratorEx",
+        "DateUtilsTest",
+        "testWeekIterator",
+        "testIsSameInstant_Cal",
+        "next",
+        "testIsSameDay_Date",
+        "tearDown"
+      ],
+      "functions_name_co_evolved_modified_file": [
+        "isSameLocalTime",
+        "isSameInstant"
+      ],
+      "functions_name_co_evolved_all_files": [
+        "testIsSameInstant_Cal",
+        "testIsSameLocalTime_Cal",
+        "testIsSameDay_Date",
+        "isSameInstant",
+        "testIsSameInstant_Date",
+        "isSameLocalTime",
+        "testIsSameDay_Cal"
+      ]
+    },
+    "file": {
+      "file_name": "DateUtils.java",
+      "file_nloc": 299,
+      "file_complexity": 86,
+      "file_token_count": 2146,
+      "file_before": "",
+      "file_after": "",
+      "file_patch": "@@ -31,7 +31,7 @@\n  * @author <a href=\"mailto:ggregory@seagullsw.com\">Gary Gregory</a>\n  * @author Phil Steitz\n  * @since 2.0\n- * @version $Id: DateUtils.java,v 1.32 2004/10/13 21:48:00 scolebourne Exp $\n+ * @version $Id: DateUtils.java,v 1.33 2004/10/16 17:08:42 scolebourne Exp $\n  */\n public class DateUtils {\n     \n@@ -125,8 +125,8 @@ public DateUtils() {\n      * 28 Mar 2002 13:45 and 12 Mar 2002 13:45 would return false.\n      * </p>\n      * \n-     * @param date1  the first date, not null\n-     * @param date2  the second date, not null\n+     * @param date1  the first date, not altered, not null\n+     * @param date2  the second date, not altered, not null\n      * @return true if they represent the same day\n      * @throws IllegalArgumentException if either date is <code>null</code>\n      * @since 2.1\n@@ -142,7 +142,6 @@ public static boolean isSameDay(Date date1, Date date2) {\n         return isSameDay(cal1, cal2);\n     }\n \n-    //-----------------------------------------------------------------------\n     /**\n      * <p>Checks if two calendar objects are on the same day ignoring time.</p>\n      *\n@@ -150,8 +149,8 @@ public static boolean isSameDay(Date date1, Date date2) {\n      * 28 Mar 2002 13:45 and 12 Mar 2002 13:45 would return false.\n      * </p>\n      * \n-     * @param cal1  the first calendar, not null\n-     * @param cal2  the second calendar, not null\n+     * @param cal1  the first calendar, not altered, not null\n+     * @param cal2  the second calendar, not altered, not null\n      * @return true if they represent the same day\n      * @throws IllegalArgumentException if either calendar is <code>null</code>\n      * @since 2.1\n@@ -165,6 +164,70 @@ public static boolean isSameDay(Calendar cal1, Calendar cal2) {\n                 cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR));\n     }\n \n+    //-----------------------------------------------------------------------\n+    /**\n+     * <p>Checks if two date objects represent the same instant in time.</p>\n+     *\n+     * <p>This method compares the long millisecond time of the two objects.</p>\n+     * \n+     * @param date1  the first date, not altered, not null\n+     * @param date2  the second date, not altered, not null\n+     * @return true if they represent the same millisecond instant\n+     * @throws IllegalArgumentException if either date is <code>null</code>\n+     * @since 2.1\n+     */\n+    public static boolean isSameInstant(Date date1, Date date2) {\n+        if (date1 == null || date2 == null) {\n+            throw new IllegalArgumentException(\"The date must not be null\");\n+        }\n+        return (date1.getTime() == date2.getTime());\n+    }\n+\n+    /**\n+     * <p>Checks if two calendar objects represent the same instant in time.</p>\n+     *\n+     * <p>This method compares the long millisecond time of the two objects.</p>\n+     * \n+     * @param cal1  the first calendar, not altered, not null\n+     * @param cal2  the second calendar, not altered, not null\n+     * @return true if they represent the same millisecond instant\n+     * @throws IllegalArgumentException if either date is <code>null</code>\n+     * @since 2.1\n+     */\n+    public static boolean isSameInstant(Calendar cal1, Calendar cal2) {\n+        if (cal1 == null || cal2 == null) {\n+            throw new IllegalArgumentException(\"The date must not be null\");\n+        }\n+        return (cal1.getTime().getTime() == cal2.getTime().getTime());\n+    }\n+\n+    //-----------------------------------------------------------------------\n+    /**\n+     * <p>Checks if two calendar objects represent the same local time.</p>\n+     *\n+     * <p>This method compares the values of the fields of the two objects.\n+     * In addition, both calendars must be the same of the same type.</p>\n+     * \n+     * @param cal1  the first calendar, not altered, not null\n+     * @param cal2  the second calendar, not altered, not null\n+     * @return true if they represent the same millisecond instant\n+     * @throws IllegalArgumentException if either date is <code>null</code>\n+     * @since 2.1\n+     */\n+    public static boolean isSameLocalTime(Calendar cal1, Calendar cal2) {\n+        if (cal1 == null || cal2 == null) {\n+            throw new IllegalArgumentException(\"The date must not be null\");\n+        }\n+        return (cal1.get(Calendar.MILLISECOND) == cal2.get(Calendar.MILLISECOND) &&\n+                cal1.get(Calendar.SECOND) == cal2.get(Calendar.SECOND) &&\n+                cal1.get(Calendar.MINUTE) == cal2.get(Calendar.MINUTE) &&\n+                cal1.get(Calendar.HOUR) == cal2.get(Calendar.HOUR) &&\n+                cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR) &&\n+                cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&\n+                cal1.get(Calendar.ERA) == cal2.get(Calendar.ERA) &&\n+                cal1.getClass() == cal2.getClass());\n+    }\n+\n     //-----------------------------------------------------------------------\n     /**\n      * <p>Round this date, leaving the field specified as the most\n",
+      "files_name_in_blame_commit": [
+        "DateUtils.java",
+        "DateUtilsTest.java"
+      ]
+    }
+  },
+  "commits_modify_file_before_fix": {
+    "size": 79
+  }
+}

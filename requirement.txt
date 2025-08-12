@@ -5,3 +5,4 @@ accelerate
 numpy
 code-diff
 matplotlib_venn
+pytest
