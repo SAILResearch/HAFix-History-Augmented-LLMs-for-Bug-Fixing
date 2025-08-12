@@ -38,7 +38,7 @@ This repository contains the implementation and evaluation framework for HAFix, 
 - Docker (for evaluation environments)
 - CUDA-compatible GPU (recommended)
 
-### 1. Environment Setup
+### Environment Setup
 
 ```bash
 # Clone the repository
@@ -57,7 +57,7 @@ conda activate replay-env
 pip install -r requirement.txt
 ```
 
-### 2. Dataset Preparation
+### Dataset Preparation
 
 Our evaluation uses two benchmark datasets:
 
@@ -78,9 +78,7 @@ python defects4j_meta_data_mining.py       # Extract metadata
 python defects4j_history_mining.py         # Mine historical information
 ```
 
-## 🔧 Core Components
-
-### 1.  Model Inference
+## 🔧 1. Model Serving and Inference 
 
 #### Evaluated Models
 - CodeLlama-7B-Instruct
@@ -94,7 +92,7 @@ python defects4j_history_mining.py         # Mine historical information
 
 #### Running Model Inference
 
-1. **Start Model Serving** (using Ollama):
+**Start Model Serving** (using Ollama):
 ```bash
 cd model_inference
 
@@ -106,7 +104,7 @@ docker compose -f model_serving_docker_compose.yml up -d
 bash monitor_model_serving_status.sh
 ```
 
-2. **Generate Fixes**:
+**Generate Fixes**:
 ```bash
 # Example: Run DeepSeek-Coder on BugsInPy with Instruction prompts
 bash ollama_model_generate.sh \
@@ -118,7 +116,7 @@ bash ollama_model_generate.sh \
     "1 2 3 4 5 6 7 8"
 ```
 
-### 3. Evaluation 🐳
+## 🐳 2. Evaluation in Docker
 
 **For BugsInPy:**
 ```bash
@@ -158,7 +156,7 @@ bash merge_eval_result.sh
 bash pass_at_k.sh
 ```
 
-## 📊 Analysis and Results
+## 📊 3. Analysis and Results
 
 ### Research Questions
 
