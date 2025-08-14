@@ -14,6 +14,20 @@ def get_parser():
     return parser
 
 
+name_map = {
+    "bugsinpy": "bpy",
+    "defects4j": "d4j",
+
+    "codellama_7b": "cl",
+    "deepseek_coder_6.7b": "dsc",
+    "deepseek_coder_v2": "dsc2",
+
+    "Instruction": "inst",
+    "InstructionLabel": "instl",
+    "InstructionMask": "instm"
+}
+
+
 def main():
     args = get_parser().parse_args()
     # debug
@@ -50,7 +64,7 @@ def main():
                 bug_ids_fixed_hafix_agg,
                 baseline_label,
                 hafix_label,
-                os.path.join(csv_result_path, f"rq1_venn_baseline_vs_hafix_agg_{dataset_name}_{model_name}_{prompt_style}.png")
+                os.path.join(csv_result_path, f"rq1_venn_baseline_vs_hafix_agg_{name_map.get(dataset_name)}_{name_map.get(model_name)}_{name_map.get(prompt_style)}.png")
             )
 
             for i in range(2, 9):  # setting_1 to setting_8
@@ -61,7 +75,7 @@ def main():
 
                 bug_ids_fixed_setting = set(df[df[setting_col] == str(1)]['bug_id'].astype(str))
                 setting_label = HistoryCategory.from_setting_key(setting_col).short_name
-                picture_name = f"rq1_venn_baseline_vs_{setting_col}_{dataset_name}_{model_name}_{prompt_style}.png"
+                picture_name = f"rq1_venn_baseline_vs_{setting_col}_{name_map.get(dataset_name)}_{name_map.get(model_name)}_{name_map.get(prompt_style)}.png"
 
                 picture_path = os.path.join(csv_result_path, picture_name)
 
@@ -133,7 +147,6 @@ def create_2_set_venn_percentage(set1, set2, set1_label, set2_label, save_file_p
         venn.get_label_by_id('10').set_text(f'')
     venn.get_label_by_id('01').set_text(f'{len(set2 - set1)}\n\n{only_set2:.2f}%')
     venn.get_label_by_id('11').set_text(f'{len(set1 & set2)}\n\n{intersection:.2f}%')
-
 
     # Optionally set the font size for better readability
     for subset in ['10', '01', '11']:

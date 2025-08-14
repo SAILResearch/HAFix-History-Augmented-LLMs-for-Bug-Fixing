@@ -21,6 +21,20 @@ def get_parser():
     return parser
 
 
+name_map = {
+    "bugsinpy": "bpy",
+    "defects4j": "d4j",
+
+    "codellama_7b": "cl",
+    "deepseek_coder_6.7b": "dsc",
+    "deepseek_coder_v2": "dsc2",
+
+    "Instruction": "inst",
+    "InstructionLabel": "instl",
+    "InstructionMask": "instm"
+}
+
+
 def main():
     args = get_parser().parse_args()
     # debug
@@ -72,7 +86,7 @@ def main():
                 fixed_y_max_label=50,
                 save_file_path=os.path.join(
                     output_path_model,
-                    f'rq1_baseline_heuristics_comparison_{dataset_name}_{model_name}_{prompt_style}.png'),
+                    f'rq1_baseline_heuristics_comparison_{name_map.get(dataset_name)}_{name_map.get(model_name)}_{name_map.get(prompt_style)}.png'),
                 has_separate_legend=True
             )
 
@@ -103,7 +117,7 @@ def main():
                     fixed_y_max_label=70,
                     save_file_path=os.path.join(
                         output_path_model,
-                        f'rq1_baseline_hafix_comparison_{dataset_name}_{model_name}_{prompt_style}.png')
+                        f'rq1_baseline_hafix_comparison_{name_map.get(dataset_name)}_{name_map.get(model_name)}_{name_map.get(prompt_style)}.png')
                 )
 
                 # RQ1.3_1 pass@k for HAFix and baseline on 70 samples for each dataset, first collect them 2 datasets * 3 models * 1 prompt style
@@ -132,7 +146,7 @@ def main():
             fixed_y_max_label=70,
             save_file_path=os.path.join(
                 output_path_dataset,
-                f'rq1_baseline_hafix_agg_comparison_{dataset_name}_{PromptCategory.instruction.value}.png'),
+                f'rq1_baseline_hafix_agg_comparison_{name_map.get(dataset_name)}_{name_map.get(PromptCategory.instruction.value)}.png'),
             pairwise=True
         )
 
@@ -151,7 +165,7 @@ def main():
                 fixed_y_max_label=50,
                 save_file_path=os.path.join(
                     output_path_dataset,
-                    f'rq2_baseline_comparison_prompt_styles_{dataset_name}_{model_name}.png')
+                    f'rq2_baseline_comparison_prompt_styles_{name_map.get(dataset_name)}_{name_map.get(model_name)}.png')
             )
 
         # RQ2.2 hafix-agg comparison for different prompt styles
@@ -169,7 +183,7 @@ def main():
                 fixed_y_max_label=70,
                 save_file_path=os.path.join(
                     output_path_dataset,
-                    f'rq2_hafix_agg_comparison_prompt_styles_{dataset_name}_{model_name}.png')
+                    f'rq2_hafix_agg_comparison_prompt_styles_{name_map.get(dataset_name)}_{name_map.get(model_name)}.png')
             )
 
 

@@ -15,6 +15,24 @@ calculate_rank_biserial <- function(wilcox_statistic, n) {
   return(r)
 }
 
+datasets <- c("bugsinpy", "defects4j")
+models <- c("codellama_7b_instruct_fp16_Instruction", "deepseek_coder_6.7b_instruct_fp16_Instruction", "deepseek_coder_v2_16b_lite_instruct_fp16_Instruction")
+
+name_map <- c(
+  "bugsinpy" = "bpy",
+  "defects4j" = "d4j",
+  
+  "codellama_7b_instruct_fp16_Instruction" = "cl_inst",
+  "deepseek_coder_6.7b_instruct_fp16_Instruction" = "dsc_inst",
+  "deepseek_coder_v2_16b_lite_instruct_fp16_Instruction" = "dsc2_inst"
+)
+# Helper to abbreviate using name_map
+shorten_name <- function(x) {
+  ifelse(x %in% names(name_map), name_map[x], x)
+}
+# print(shorten_name("codellama_7b_instruct_fp16_Instruction"))
+
+
 # ================================ RQ1.1: statistical test on baseline and individual heuristics (n=10) ================================
 # ================================ RQ1.2: statistical test on baseline and HAFix-Agg (n=70) ================================
 # ================================ RQ2.1: statistical test on baseline of 3 prompt styles ================================
@@ -101,8 +119,6 @@ statistical_test_passk_heuristics <- function(input_file_path) {
 getwd()
 # Config
 base_dir <- "RQ1_2"
-datasets <- c("bugsinpy", "defects4j")
-models <- c("codellama_7b_instruct_fp16_Instruction", "deepseek_coder_6.7b_instruct_fp16_Instruction", "deepseek_coder_v2_16b_lite_instruct_fp16_Instruction")
 models_short <- c("codellama_7b", "deepseek_coder_6.7b", "deepseek_coder_v2")
 # datasets <- c("bugsinpy")
 # models <- c(
@@ -255,7 +271,7 @@ box_plot_cost_of_bugs_across_scenarios <- function(dataset, model_name, base_dir
   }
   print(plot)
   
-  output_filename <- paste0("rq3_box_plot_", file_tag, "_", dataset, "_", model_name, ".png")
+  output_filename <- paste0("rq3_box_plot_", file_tag, "_", shorten_name(dataset), "_", shorten_name(model_name), ".png")
   ggsave(
     filename = output_filename,
     plot = plot,
@@ -272,13 +288,6 @@ box_plot_cost_of_bugs_across_scenarios <- function(dataset, model_name, base_dir
 getwd()
 # Config
 base_dir <- "RQ3"
-datasets <- c("bugsinpy", "defects4j")
-models <- c(
-  "codellama_7b_instruct_fp16_Instruction",
-  "deepseek_coder_6.7b_instruct_fp16_Instruction",
-  "deepseek_coder_v2_16b_lite_instruct_fp16_Instruction"
-)
-
 all_reductions <- c()
 # Loop over all combinations
 for (dataset in datasets) {
@@ -286,40 +295,40 @@ for (dataset in datasets) {
   for (model_name in models) {
     cat("\n========================", dataset, model_name, "========================\n")
     
-    # Token plot
-    y_lim <- 500000
-    y_break <- 100000
-    ave_median <- box_plot_cost_of_bugs_across_scenarios(
-      dataset = dataset,
-      model_name = model_name,
-      base_dir = base_dir,
-      file_prefix = "token",
-      value_column = "total_length",
-      y_label = "Token Count per Bug",
-      file_tag = "token",
-      ylim = y_lim,
-      ybreak = y_break
-    )
-
-    # # Inference time plot
-    # if (model_name == "deepseek_coder_6.7b_instruct_fp16_Instruction") {
-    #   y_lim <- 1000
-    #   y_break <- 250
-    # } else {
-    #   y_lim <- NULL
-    #   y_break <- NULL
-    # }
+    # # Token plot
+    # y_lim <- 500000
+    # y_break <- 100000
     # ave_median <- box_plot_cost_of_bugs_across_scenarios(
     #   dataset = dataset,
     #   model_name = model_name,
     #   base_dir = base_dir,
-    #   file_prefix = "time",
-    #   value_column = "duration_second",
-    #   y_label = "Inference Time per Bug (s)",
-    #   file_tag = "time",
+    #   file_prefix = "token",
+    #   value_column = "total_length",
+    #   y_label = "Token Count per Bug",
+    #   file_tag = "token",
     #   ylim = y_lim,
     #   ybreak = y_break
     # )
+
+    # Inference time plot
+    if (model_name == "deepseek_coder_6.7b_instruct_fp16_Instruction") {
+      y_lim <- 1000
+      y_break <- 250
+    } else {
+      y_lim <- NULL
+      y_break <- NULL
+    }
+    ave_median <- box_plot_cost_of_bugs_across_scenarios(
+      dataset = dataset,
+      model_name = model_name,
+      base_dir = base_dir,
+      file_prefix = "time",
+      value_column = "duration_second",
+      y_label = "Inference Time per Bug (s)",
+      file_tag = "time",
+      ylim = y_lim,
+      ybreak = y_break
+    )
     
     # # Token plot weighted
     # f_token <- box_plot_cost_of_bugs_across_scenarios(
@@ -446,7 +455,7 @@ box_plot_exhaustive_time_by_setting <- function(dataset, model_name, base_dir, y
   }
   
   # Save plot
-  output_filename <- paste0("rq3_box_plot_time_exhaustive_by_setting_", dataset, "_", model_name, ".png")
+  output_filename <- paste0("rq3_box_plot_time_exhaustive_by_setting_", shorten_name(dataset), "_", shorten_name(model_name), ".png")
   ggsave(
     filename = output_filename,
     plot = plot,
@@ -463,12 +472,6 @@ box_plot_exhaustive_time_by_setting <- function(dataset, model_name, base_dir, y
 getwd()
 # Config
 base_dir <- "RQ3"
-datasets <- c("bugsinpy", "defects4j")
-models <- c(
-  "codellama_7b_instruct_fp16_Instruction",
-  "deepseek_coder_6.7b_instruct_fp16_Instruction",
-  "deepseek_coder_v2_16b_lite_instruct_fp16_Instruction"
-)
 # Loop over all combinations
 for (dataset in datasets) {
   cat("\n========================", dataset, "========================\n")
@@ -489,7 +492,7 @@ plot_inference_token_symmetry <- function(dataset, model_name, base_dir, file_ta
   # Paths
   input_path <- file.path(base_dir, dataset, model_name, input_file_name)
   output_dir <- file.path(base_dir, dataset, model_name)
-  output_filename <- paste0("rq3_symmetry_bar_setting_", file_tag, "_", dataset, "_", model_name, ".png")
+  output_filename <- paste0("rq3_symmetry_bar_setting_", file_tag, "_", shorten_name(dataset), "_", shorten_name(model_name), ".png")
   
   # Read and prepare data
   data <- read_csv(input_path, show_col_types = FALSE)
@@ -596,7 +599,7 @@ for (dataset in datasets) {
 scatter_plot_accuracy_vs_metric <- function(dataset, model_name, base_dir, input_file_name, x_column, x_label, file_tag) {
   input_path <- file.path(base_dir, dataset, model_name, input_file_name)
   output_dir <- file.path(base_dir, dataset, model_name)
-  output_filename <- paste0("rq3_scatter_accuracy_", file_tag, "_", dataset, "_", model_name, ".png")
+  output_filename <- paste0("rq3_scatter_accuracy_", file_tag, "_", shorten_name(dataset), "_", shorten_name(model_name), ".png")
   
   df <- read_csv(input_path, show_col_types = FALSE)
   
@@ -658,18 +661,31 @@ scatter_plot_accuracy_vs_metric <- function(dataset, model_name, base_dir, input
 
 for (dataset in datasets) {
   for (model in models) {
-    # Token vs Accuracy
-    scatter_plot_accuracy_vs_metric(
+    # # Token vs Accuracy
+    # f <- scatter_plot_accuracy_vs_metric(
+    #   dataset = dataset,
+    #   model_name = model,
+    #   base_dir = base_dir,
+    #   input_file_name = "token_vs_accuracy.csv",
+    #   x_column = "total_total_length",
+    #   x_label = "Total Inference Tokens",
+    #   file_tag = "token"
+    # )
+    # print(f)
+    
+    # Time vs Accuracy
+    f <- scatter_plot_accuracy_vs_metric(
       dataset = dataset,
       model_name = model,
       base_dir = base_dir,
-      input_file_name = "token_vs_accuracy.csv",
-      x_column = "total_total_length",
-      x_label = "Total Inference Tokens",
-      file_tag = "token"
+      input_file_name = "time_vs_accuracy.csv",
+      x_column = "total_duration_second",
+      x_label = "Total Inference Time (Seconds)",
+      file_tag = "time"
     )
+    print(f)
     
-    # # Token vs Accuracy
+    # # Token weighted vs Accuracy
     # scatter_plot_accuracy_vs_metric(
     #   dataset = dataset,
     #   model_name = model,
@@ -678,17 +694,6 @@ for (dataset in datasets) {
     #   x_column = "total_total_length_weighted",
     #   x_label = "Total Inference Tokens",
     #   file_tag = "token_weighted"
-    # )
-    
-    # # Time vs Accuracy
-    # scatter_plot_accuracy_vs_metric(
-    #   dataset = dataset,
-    #   model_name = model,
-    #   base_dir = base_dir,
-    #   input_file_name = "time_vs_accuracy.csv",
-    #   x_column = "total_duration_second",
-    #   x_label = "Total Inference Time (Seconds)",
-    #   file_tag = "time"
     # )
     
   }
@@ -703,7 +708,7 @@ scatter_plot_token_vs_time <- function(dataset, model_name, base_dir, file_tag, 
   token_path <- file.path(base_dir, dataset, model_name, token_file)
   time_path <- file.path(base_dir, dataset, model_name, time_file)
   output_dir <- file.path(base_dir, dataset, model_name)
-  output_filename <- paste0("rq3_scatter_", file_tag, "_vs_time_", dataset, "_", model_name, ".png")
+  output_filename <- paste0("rq3_scatter_", file_tag, "_vs_time_", shorten_name(dataset), "_", shorten_name(model_name), ".png")
   
   # 加载 CSV
   token_df <- read_csv(token_path, show_col_types = FALSE)
@@ -793,9 +798,6 @@ getwd()  # Should show: .../fm-apr-replay/analysis
 # Config
 base_dir <- "RQ1_2"
 print(base_dir)
-datasets <- c("bugsinpy", "defects4j")
-models <- c("codellama_7b_instruct_fp16_Instruction", "deepseek_coder_6.7b_instruct_fp16_Instruction", "deepseek_coder_v2_16b_lite_instruct_fp16_Instruction")
-
 for (dataset in datasets) {
   for (model in models) {
     cat("\n========================", dataset, model, "========================\n")
