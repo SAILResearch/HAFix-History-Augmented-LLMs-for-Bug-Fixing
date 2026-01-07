@@ -3,7 +3,7 @@ eval "$(conda shell.bash hook)"
 
 PROJECT_ROOT=$(cd $(dirname $0); cd ../; pwd -P)
 echo "Project root path: $PROJECT_ROOT"
-conda activate replay-env
+conda activate hafix-env
 
 # ========== CONFIGURATION ==========
 bug_dataset=$1  # e.g., defects4j, bugsinpy

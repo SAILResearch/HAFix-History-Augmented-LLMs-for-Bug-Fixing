@@ -3,7 +3,7 @@ eval "$(conda shell.bash hook)"
 
 PROJECT_ROOT=$(cd $(dirname $0); cd ../; pwd -P)
 echo "Project root path: $PROJECT_ROOT"
-conda activate replay-env
+conda activate hafix-env
 
 # 3 models on 3 prompt styles
 CODELLAMA_DEEPSEEK_CODER_INSTRUCTION_LABEL_MASK="codellama_7b_instruct_fp16_Instruction,codellama_7b_instruct_fp16_InstructionLabel,codellama_7b_instruct_fp16_InstructionMask,deepseek_coder_6.7b_instruct_fp16_Instruction,deepseek_coder_6.7b_instruct_fp16_InstructionLabel,deepseek_coder_6.7b_instruct_fp16_InstructionMask,deepseek_coder_v2_16b_lite_instruct_fp16_Instruction,deepseek_coder_v2_16b_lite_instruct_fp16_InstructionLabel,deepseek_coder_v2_16b_lite_instruct_fp16_InstructionMask"

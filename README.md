@@ -50,8 +50,8 @@ bash env_setup.sh
 pip install -r requirement.txt
 
 # Set up conda environment (recommended)
-conda create -n replay-env python=3.8
-conda activate replay-env
+conda create -n hafix-env python=3.8
+conda activate hafix-env
 pip install -r requirement.txt
 ```
 
