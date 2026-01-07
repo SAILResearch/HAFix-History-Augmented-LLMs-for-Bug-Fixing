@@ -87,7 +87,10 @@ def main():
                 save_file_path=os.path.join(
                     output_path_model,
                     f'rq1_baseline_heuristics_comparison_{name_map.get(dataset_name)}_{name_map.get(model_name)}_{name_map.get(prompt_style)}.png'),
-                has_separate_legend=True
+                has_separate_legend=True,
+                font_size=22,
+                legend_font_size=20,
+                tick_font_size=20
             )
 
             # RQ1.2 pass@k for HAFix and baseline on 70 samples
@@ -111,14 +114,14 @@ def main():
                                       save_file_path=os.path.join(output_path_model, "baseline_pass_at_k_10_7_groups.csv"))
 
                 # First generate all figures, then set fixed_y_max_label=70 for unifying multiple figures based on observation of maximum y value
-                draw_pass_at_k_comparison_dynamic_groups(
-                    data_groups=[pass_at_k_hafix, pass_at_k_baseline_70],
-                    labels=[HistoryCategory(hafix_agg_flag).short_name, HistoryCategory(baseline_flag).short_name],
-                    fixed_y_max_label=70,
-                    save_file_path=os.path.join(
-                        output_path_model,
-                        f'rq1_baseline_hafix_comparison_{name_map.get(dataset_name)}_{name_map.get(model_name)}_{name_map.get(prompt_style)}.png')
-                )
+                # draw_pass_at_k_comparison_dynamic_groups(
+                #     data_groups=[pass_at_k_hafix, pass_at_k_baseline_70],
+                #     labels=[HistoryCategory(hafix_agg_flag).short_name, HistoryCategory(baseline_flag).short_name],
+                #     fixed_y_max_label=70,
+                #     save_file_path=os.path.join(
+                #         output_path_model,
+                #         f'rq1_baseline_hafix_comparison_{name_map.get(dataset_name)}_{name_map.get(model_name)}_{name_map.get(prompt_style)}.png')
+                # )
 
                 # RQ1.3_1 pass@k for HAFix and baseline on 70 samples for each dataset, first collect them 2 datasets * 3 models * 1 prompt style
                 baseline_hafix_compare_all_models[f"{HistoryCategory(baseline_flag).short_name}_{model_name}"] = pass_at_k_baseline_70
@@ -165,7 +168,14 @@ def main():
                 fixed_y_max_label=50,
                 save_file_path=os.path.join(
                     output_path_dataset,
-                    f'rq2_baseline_comparison_prompt_styles_{name_map.get(dataset_name)}_{name_map.get(model_name)}.png')
+                    f'rq2_baseline_comparison_prompt_styles_{name_map.get(dataset_name)}_{name_map.get(model_name)}.png'),
+                has_separate_legend=True,
+                font_size=22,
+                legend_font_size=20,
+                tick_font_size=20,
+                legend_save_file_path=os.path.join(
+                    output_path_dataset,
+                    "legend_separate_rq2_baseline_prompt_styles.png")
             )
 
         # RQ2.2 hafix-agg comparison for different prompt styles
@@ -183,7 +193,15 @@ def main():
                 fixed_y_max_label=70,
                 save_file_path=os.path.join(
                     output_path_dataset,
-                    f'rq2_hafix_agg_comparison_prompt_styles_{name_map.get(dataset_name)}_{name_map.get(model_name)}.png')
+                    f'rq2_hafix_agg_comparison_prompt_styles_{name_map.get(dataset_name)}_{name_map.get(model_name)}.png'),
+                has_separate_legend=True,
+                font_size=22,
+                legend_font_size=20,
+                tick_font_size=20,
+                legend_save_file_path=os.path.join(
+                    output_path_dataset,
+                    "legend_separate_rq2_hafix_prompt_styles.png"),
+                legend_marker_size=0
             )
 
 
@@ -369,7 +387,9 @@ def _compute_pass_at_k(n, c, k):
 
 
 def draw_pass_at_k_comparison_dynamic_groups(data_groups, labels, x_label='K values', y_label='Pass@k (%)', fixed_y_max_label=None,
-                                             save_file_path='comparison.png', dpi=300, pairwise=False, has_separate_legend=False):
+                                             save_file_path='comparison.png', dpi=300, pairwise=False, has_separate_legend=False,
+                                             font_size=None, legend_font_size=None, tick_font_size=None,
+                                             legend_save_file_path=None, legend_marker_size=None):
     """
     Draws a comparison plot for Pass@k results for multiple data groups.
 
@@ -426,16 +446,23 @@ def draw_pass_at_k_comparison_dynamic_groups(data_groups, labels, x_label='K val
     ax.grid(visible=True, which='both', linestyle='-', linewidth=0.5, alpha=0.7)
 
     # Add labels and legend
-    ax.set_xlabel(x_label, fontweight='bold')
-    ax.set_ylabel(y_label, fontweight='bold')
+    ax.set_xlabel(x_label, fontweight='bold', fontsize=font_size)
+    ax.set_ylabel(y_label, fontweight='bold', fontsize=font_size)
+
+    if tick_font_size is None:
+        tick_font_size = font_size
+    if tick_font_size is not None:
+        ax.tick_params(axis='both', labelsize=tick_font_size)
 
     # when what to merge line charts together with one separate legend
     handles, legend_labels = ax.get_legend_handles_labels()
     ncol = 3 if len(legend_labels) <= 3 else 2
 
+    if legend_font_size is None:
+        legend_font_size = font_size
     if not has_separate_legend:
         fig.legend(handles, legend_labels,
-                   loc='upper center', bbox_to_anchor=(0.52, 0.05), ncol=ncol)
+                   loc='upper center', bbox_to_anchor=(0.52, 0.05), ncol=ncol, fontsize=legend_font_size)
     # plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=ncol)
 
     # Adjust y maximum value labeled in y axis
@@ -452,17 +479,26 @@ def draw_pass_at_k_comparison_dynamic_groups(data_groups, labels, x_label='K val
     print(f"Saved figure: {save_file_path}")
 
     if has_separate_legend:
-        dataset_dir = os.path.dirname(os.path.dirname(save_file_path))
-        legend_path = os.path.join(dataset_dir, "legend_separate.png")
+        if legend_save_file_path is None:
+            dataset_dir = os.path.dirname(os.path.dirname(save_file_path))
+            legend_path = os.path.join(dataset_dir, "legend_separate.png")
+        else:
+            legend_path = legend_save_file_path
+            legend_dir = os.path.dirname(legend_path)
+            if legend_dir:
+                os.makedirs(legend_dir, exist_ok=True)
+        if legend_marker_size is None:
+            legend_marker_size = 6
         legend_fig = plt.figure(figsize=(2 * ncol, 1.0))
         legend_ax = legend_fig.add_subplot(111)
         for h, lbl in zip(handles, legend_labels):
             legend_ax.plot([], [], label=lbl,
                            marker=h.get_marker(),
                            color=h.get_color(),
-                           linestyle='-')
+                           linestyle='-',
+                           markersize=legend_marker_size)
         legend_ax.axis('off')
-        legend_fig.legend(loc='center', ncol=ncol, frameon=True)
+        legend_fig.legend(loc='center', ncol=ncol, frameon=True, fontsize=legend_font_size)
         legend_fig.savefig(legend_path, bbox_inches='tight', dpi=dpi)
         plt.close(legend_fig)
         print(f"Saved legend image: {legend_path}")

@@ -156,7 +156,8 @@ for (dataset in datasets) {
 
 
 # =================================== RQ3: 1.1 Inference token and time: box plot of different bugs across different scenarios ===================================
-box_plot_cost_of_bugs_across_scenarios <- function(dataset, model_name, base_dir, file_prefix, value_column, y_label, file_tag, ylim = NULL, ybreak = NULL) {
+box_plot_cost_of_bugs_across_scenarios <- function(dataset, model_name, base_dir, file_prefix, value_column, y_label, file_tag,
+                                                   ylim = NULL, ybreak = NULL, font_size = 12) {
   input_dir <- file.path(base_dir, dataset, model_name)
   output_dir <- input_dir
   
@@ -245,17 +246,19 @@ box_plot_cost_of_bugs_across_scenarios <- function(dataset, model_name, base_dir
       geom = "text",
       aes(label = comma_format(accuracy = 1)(..y..)),
       vjust = -0.7,
-      size = 3.2,
+      size = font_size * 0.26,
       color = "black"
     ) +
     labs(x = "Cost Scenarios", y = y_label) +
     scale_x_discrete(labels = custom_cost_labels) +
     scale_y_continuous(labels = comma_format(accuracy = 1)) +
-    theme_bw(base_size = 12) +
+    theme_bw(base_size = font_size) +
     theme(
       panel.border = element_rect(color = "black", fill = NA, size = 0.8),
-      axis.text.x = element_text(angle = 30, hjust = 1),
-      axis.title.y = element_text(margin = margin(r = 10)),
+      axis.text.x = element_text(angle = 30, hjust = 1, size = font_size - 2),
+      axis.text.y = element_text(size = font_size - 2),
+      axis.title.x = element_text(size = font_size),
+      axis.title.y = element_text(size = font_size, margin = margin(r = 10)),
       plot.margin = margin(10, 10, 10, 10)
     )
   # Add limits and breaks only if needed
@@ -295,53 +298,42 @@ for (dataset in datasets) {
   for (model_name in models) {
     cat("\n========================", dataset, model_name, "========================\n")
     
-    # # Token plot
-    # y_lim <- 500000
-    # y_break <- 100000
-    # ave_median <- box_plot_cost_of_bugs_across_scenarios(
-    #   dataset = dataset,
-    #   model_name = model_name,
-    #   base_dir = base_dir,
-    #   file_prefix = "token",
-    #   value_column = "total_length",
-    #   y_label = "Token Count per Bug",
-    #   file_tag = "token",
-    #   ylim = y_lim,
-    #   ybreak = y_break
-    # )
-
-    # Inference time plot
-    if (model_name == "deepseek_coder_6.7b_instruct_fp16_Instruction") {
-      y_lim <- 1000
-      y_break <- 250
-    } else {
-      y_lim <- NULL
-      y_break <- NULL
-    }
+    # Token plot
+    y_lim <- 500000
+    y_break <- 100000
     ave_median <- box_plot_cost_of_bugs_across_scenarios(
       dataset = dataset,
       model_name = model_name,
       base_dir = base_dir,
-      file_prefix = "time",
-      value_column = "duration_second",
-      y_label = "Inference Time per Bug (s)",
-      file_tag = "time",
+      file_prefix = "token",
+      value_column = "total_length",
+      y_label = "Token Count per Bug",
+      file_tag = "token",
       ylim = y_lim,
-      ybreak = y_break
+      ybreak = y_break,
+      font_size = 17
     )
     
-    # # Token plot weighted
-    # f_token <- box_plot_cost_of_bugs_across_scenarios(
+    # # Inference time plot
+    # if (model_name == "deepseek_coder_6.7b_instruct_fp16_Instruction") {
+    #   y_lim <- 1000
+    #   y_break <- 250
+    # } else {
+    #   y_lim <- NULL
+    #   y_break <- NULL
+    # }
+    # ave_median <- box_plot_cost_of_bugs_across_scenarios(
     #   dataset = dataset,
     #   model_name = model_name,
     #   base_dir = base_dir,
-    #   file_prefix = "token",
-    #   value_column = "total_length_weighted",
-    #   y_label = "Token Count per Bug",
-    #   file_tag = "token_weighted"
+    #   file_prefix = "time",
+    #   value_column = "duration_second",
+    #   y_label = "Inference Time per Bug (s)",
+    #   file_tag = "time",
+    #   ylim = y_lim,
+    #   ybreak = y_break,
+    #   font_size = 17
     # )
-    # print(f_token)
-    
     
     all_reductions <- c(all_reductions, ave_median)
   }
@@ -353,7 +345,7 @@ cat(sprintf("\nFinal average reduction across all configurations: %.0f%%\n", fin
 
 
 # =====================================RQ3: 2.1 Inference time: box plot of different bugs across different settings only in Exhaustive scenario=====================================
-box_plot_exhaustive_time_by_setting <- function(dataset, model_name, base_dir, ylim = NULL, ybreak = NULL) {
+box_plot_exhaustive_time_by_setting <- function(dataset, model_name, base_dir, ylim = NULL, ybreak = NULL, font_size = 12) {
   # Define input/output paths
   input_dir <- file.path(base_dir, dataset, model_name)
   output_dir <- input_dir
@@ -382,7 +374,7 @@ box_plot_exhaustive_time_by_setting <- function(dataset, model_name, base_dir, y
     select(bug_id, setting, duration_second) %>%
     drop_na(duration_second) %>%
     filter(is.finite(duration_second))
-
+  
   # Reshape for Friedman test (wide format by bug_id)
   df_wide <- df_clean %>%
     pivot_wider(names_from = setting, values_from = duration_second, id_cols = bug_id) %>%
@@ -430,16 +422,18 @@ box_plot_exhaustive_time_by_setting <- function(dataset, model_name, base_dir, y
       geom = "text",
       aes(label = comma_format(accuracy = 1)(..y..)),
       vjust = -0.7,
-      size = 3.2,
+      size = font_size * 0.26,
       color = "black"
     ) +
     labs(x = "HAFix Heuristics", y = "Inference Time (Seconds)") +
     scale_y_continuous(labels = scales::comma) +
-    theme_bw(base_size = 12) +
+    theme_bw(base_size = font_size) +
     theme(
       panel.border = element_rect(color = "black", fill = NA, size = 0.8),
-      axis.text.x = element_text(angle = 45, hjust = 1),
-      axis.title.y = element_text(margin = margin(r = 10)),
+      axis.text.x = element_text(angle = 45, hjust = 1, size = font_size - 2),
+      axis.text.y = element_text(size = font_size - 2),
+      axis.title.x = element_text(size = font_size),
+      axis.title.y = element_text(size = font_size, margin = margin(r = 10)),
       plot.margin = margin(10, 10, 10, 10)
     )
   # Add limits and breaks only if needed
@@ -479,7 +473,7 @@ for (dataset in datasets) {
     cat("\n========================", dataset, model_name, "========================\n")
     y_lim <- 300
     y_break <- 50
-    f <- box_plot_exhaustive_time_by_setting(dataset, model_name, base_dir, ylim = y_lim, ybreak = y_break)
+    f <- box_plot_exhaustive_time_by_setting(dataset, model_name, base_dir, ylim = y_lim, ybreak = y_break, font_size = 17)
     print(f)
   }
 }
@@ -488,7 +482,10 @@ for (dataset in datasets) {
 
 
 # ===================================RQ3: 3.1 Inference token: symmetric grouped bar chart, split to 4 subfigures===================================
-plot_inference_token_symmetry <- function(dataset, model_name, base_dir, file_tag, input_file_name) {
+plot_inference_token_symmetry <- function(dataset, model_name, base_dir, file_tag, input_file_name,
+                                          font_size = 12, legend_enabled = TRUE,
+                                          legend_output_path = NULL, legend_output_width = 6,
+                                          legend_output_height = 1.5) {
   # Paths
   input_path <- file.path(base_dir, dataset, model_name, input_file_name)
   output_dir <- file.path(base_dir, dataset, model_name)
@@ -523,6 +520,7 @@ plot_inference_token_symmetry <- function(dataset, model_name, base_dir, file_ta
     "setting_6" = "#FDB462", "setting_3" = "#BEBADA", "setting_1" = "#8DD3C7", "setting_2" = "#FFFFB3",
     "setting_5" = "#80B1D3", "setting_4" = "#FB8072", "setting_7" = "#B3DE69", "setting_8" = "#FCCDE5"
   )
+  data$setting <- factor(data$setting, levels = names(custom_heuristics_labels))
   
   # y-axis bounds
   y_min <- min(-data$token_not_fixed, na.rm = TRUE)
@@ -531,28 +529,36 @@ plot_inference_token_symmetry <- function(dataset, model_name, base_dir, file_ta
   text_position <- y_max + y_padding / 2
   
   # Plot group function
-  plot_group <- function(df_group, y_label = FALSE) {
+  plot_group <- function(df_group, y_label = FALSE, show_legend = legend_enabled) {
     # Local setting order per type
     local_setting_order <- unique(df_group$setting)
+    
+    label_text_size <- font_size * 0.29
+    strip_text_size <- font_size + 3
+    legend_text_size <- font_size + 3
     
     ggplot(df_group, aes(x = factor(setting, levels = local_setting_order), fill = setting)) +
       geom_bar(aes(y = token_fixed), stat = "identity", color = "black", alpha = 0.7) +
       geom_bar(aes(y = -token_not_fixed), stat = "identity", color = "black", alpha = 0.7) +
-      geom_text(aes(y = text_position, label = bugs_append), vjust = -0.5, size = 3.5, color = "blue") +
+      geom_text(aes(y = text_position, label = bugs_append), vjust = -0.5, size = label_text_size, color = "blue") +
       facet_wrap(. ~ type, labeller = custom_labeller, switch = "x", scales = "free_x") +
       scale_y_continuous(
         labels = scales::comma_format(),
         limits = c(y_min - 0.3 * y_padding, y_max + 1.2 * y_padding)  # Increased upper limit
       ) +
       scale_fill_manual(values = custom_colors, labels = custom_heuristics_labels, name = NULL) +
-      labs(x = NULL, y = if (y_label) "                   Inference Token Count\n                   ← Failed             Successful →" else NULL) +
-      theme_minimal() +
+      labs(
+        x = NULL,
+        y = if (y_label) "Inference Token Count\n   \u2190 F         S \u2192" else NULL
+      ) +
+      theme_minimal(base_size = font_size) +
       theme(
         axis.text.x = element_blank(),
-        strip.text = element_text(size = 15),
-        axis.title.y = element_text(size = 12, margin = margin(r = 5)),
-        legend.text = element_text(size = 15),
-        plot.margin = margin(10, 10, 10, 10)
+        strip.text = element_text(size = strip_text_size),
+        axis.title.y = element_text(size = font_size, margin = margin(r = 12)),
+        legend.text = element_text(size = legend_text_size),
+        legend.position = if (show_legend) "right" else "none",
+        plot.margin = margin(18, 18, 22, 18)
       ) +
       stat_smooth(aes(y = token_fixed, group = 1), method = "lm", se = FALSE,
                   color = "red", linetype = "dashed", size = 0.5) +
@@ -566,7 +572,42 @@ plot_inference_token_symmetry <- function(dataset, model_name, base_dir, file_ta
   plot3 <- plot_group(data[data$type == "es_accsorted", ], y_label = TRUE)
   plot4 <- plot_group(data[data$type == "es_unisorted", ])
   
-  combined_plot <- (plot1 | plot2) / (plot3 | plot4) + plot_layout(guides = "collect")
+  combined_plot <- (plot1 | plot2) / (plot3 | plot4)
+  if (legend_enabled) {
+    combined_plot <- combined_plot + plot_layout(guides = "collect")
+  }
+  
+  # Save a separate legend when requested.
+  if (!legend_enabled && !is.null(legend_output_path)) {
+    extract_legend <- function(p) {
+      plot_grob <- ggplotGrob(p)
+      legend_index <- which(sapply(plot_grob$grobs, function(x) x$name) == "guide-box")
+      if (length(legend_index) == 0) {
+        return(NULL)
+      }
+      plot_grob$grobs[[legend_index[1]]]
+    }
+    legend_plot <- plot_group(data, y_label = FALSE, show_legend = TRUE) +
+      theme(
+        legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.box.margin = margin(5, 5, 5, 5),
+        legend.background = element_rect(color = "gray70", fill = "white", linewidth = 0.6),
+        plot.margin = margin(5, 5, 5, 5)
+      )
+    legend_grob <- extract_legend(legend_plot)
+    if (!is.null(legend_grob)) {
+      legend_width <- convertWidth(sum(legend_grob$widths), "in", valueOnly = TRUE)
+      legend_height <- convertHeight(sum(legend_grob$heights), "in", valueOnly = TRUE)
+      legend_width <- legend_width + 0.2
+      legend_height <- legend_height + 0.2
+      ggsave(legend_grob,
+             filename = legend_output_path,
+             width = max(legend_output_width, legend_width),
+             height = max(legend_output_height, legend_height),
+             dpi = 600)
+    }
+  }
   
   # Save
   ggsave(combined_plot,
@@ -579,14 +620,17 @@ plot_inference_token_symmetry <- function(dataset, model_name, base_dir, file_ta
   return(combined_plot)
 }
 
+legend_written <- FALSE
+legend_output_path <- file.path(base_dir, "rq3_symmetry_bar_setting_token_legend.png")
+
 for (dataset in datasets) {
   for (model in models) {
-    f <- plot_inference_token_symmetry(dataset, model, base_dir, file_tag = "token", input_file_name = "token_summary_symmetry.csv")
+    f <- plot_inference_token_symmetry(dataset, model, base_dir, file_tag = "token",
+                                       input_file_name = "token_summary_symmetry.csv",
+                                       font_size = 20, legend_enabled = FALSE,
+                                       legend_output_path = if (!legend_written) legend_output_path else NULL)
+    legend_written <- TRUE
     print(f)
-    
-    # # token weighted
-    # f <- plot_inference_token_symmetry(dataset, model, base_dir, file_tag = "token_weighted", input_file_name = "token_summary_symmetry_weighted.csv")
-    # print(f)
   }
 }
 
@@ -594,9 +638,10 @@ for (dataset in datasets) {
 
 
 
+
 # ===================================RQ3: 4.1 scatter token vs accuracy===================================
 # ===================================RQ3: 4.2 scatter time vs accuracy===================================
-scatter_plot_accuracy_vs_metric <- function(dataset, model_name, base_dir, input_file_name, x_column, x_label, file_tag) {
+scatter_plot_accuracy_vs_metric <- function(dataset, model_name, base_dir, input_file_name, x_column, x_label, file_tag, font_size = 12) {
   input_path <- file.path(base_dir, dataset, model_name, input_file_name)
   output_dir <- file.path(base_dir, dataset, model_name)
   output_filename <- paste0("rq3_scatter_accuracy_", file_tag, "_", shorten_name(dataset), "_", shorten_name(model_name), ".png")
@@ -620,7 +665,7 @@ scatter_plot_accuracy_vs_metric <- function(dataset, model_name, base_dir, input
     geom_point(size = 3, color = "black", fill = "white", shape = 21, stroke = 0.8) +
     geom_text_repel(
       aes(label = setting),
-      size = 3.2,
+      size = font_size * 0.26,
       max.overlaps = Inf,
       force = 5,
       box.padding = 0.6,
@@ -634,15 +679,15 @@ scatter_plot_accuracy_vs_metric <- function(dataset, model_name, base_dir, input
       x = x_label,
       y = "Percentage of Bugs Being Fixed"
     ) +
-    theme_bw(base_size = 12) +
+    theme_bw(base_size = font_size) +
     theme(
       panel.border = element_rect(color = "black", fill = NA, size = 0.8),
       panel.grid.major = element_line(color = "gray90"),
       panel.grid.minor = element_blank(),
-      axis.title.y = element_text(margin = margin(r = 10)),
-      axis.text.x = element_text(size = 10),
-      axis.text.y = element_text(size = 10),
-      axis.title = element_text(size = 11),
+      axis.title.y = element_text(size = font_size, margin = margin(r = 10)),
+      axis.text.x = element_text(size = font_size - 2),
+      axis.text.y = element_text(size = font_size - 2),
+      axis.title = element_text(size = font_size),
       plot.margin = margin(10, 10, 10, 10)
     )
   
@@ -661,41 +706,31 @@ scatter_plot_accuracy_vs_metric <- function(dataset, model_name, base_dir, input
 
 for (dataset in datasets) {
   for (model in models) {
-    # # Token vs Accuracy
-    # f <- scatter_plot_accuracy_vs_metric(
-    #   dataset = dataset,
-    #   model_name = model,
-    #   base_dir = base_dir,
-    #   input_file_name = "token_vs_accuracy.csv",
-    #   x_column = "total_total_length",
-    #   x_label = "Total Inference Tokens",
-    #   file_tag = "token"
-    # )
-    # print(f)
-    
-    # Time vs Accuracy
+    # Token vs Accuracy
     f <- scatter_plot_accuracy_vs_metric(
       dataset = dataset,
       model_name = model,
       base_dir = base_dir,
-      input_file_name = "time_vs_accuracy.csv",
-      x_column = "total_duration_second",
-      x_label = "Total Inference Time (Seconds)",
-      file_tag = "time"
+      input_file_name = "token_vs_accuracy.csv",
+      x_column = "total_total_length",
+      x_label = "Total Inference Tokens",
+      file_tag = "token",
+      font_size = 17
     )
     print(f)
     
-    # # Token weighted vs Accuracy
-    # scatter_plot_accuracy_vs_metric(
+    # # Time vs Accuracy
+    # f <- scatter_plot_accuracy_vs_metric(
     #   dataset = dataset,
     #   model_name = model,
     #   base_dir = base_dir,
-    #   input_file_name = "token_vs_accuracy_weighted.csv",
-    #   x_column = "total_total_length_weighted",
-    #   x_label = "Total Inference Tokens",
-    #   file_tag = "token_weighted"
+    #   input_file_name = "time_vs_accuracy.csv",
+    #   x_column = "total_duration_second",
+    #   x_label = "Total Inference Time (Seconds)",
+    #   file_tag = "time",
+    #   font_size = 17
     # )
-    
+    # print(f)
   }
 }
 
